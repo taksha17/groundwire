@@ -1,0 +1,14 @@
+.venv
+.git
+.pytest_cache
+.mypy_cache
+.angular
+__pycache__
+*.egg-info
+.superpowers
+.impeccable
+tests
+docs
+dashboard
+*.md
+!README.md

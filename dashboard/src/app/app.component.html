@@ -1,0 +1,57 @@
+<div class="box">
+  <header class="plate">
+    <p class="plate-name">Groundwire</p>
+    <p class="plate-frame">Signal box {{ selected()?.agent_name || 'unset' }}</p>
+    <nav class="filters" aria-label="Route frame">
+      <button type="button" [class.on]="filter() === 'all'" (click)="setFilter('all')">All routes</button>
+      <button type="button" [class.on]="filter() === 'live'" (click)="setFilter('live')">Live</button>
+      <button type="button" [class.on]="filter() === 'held'" (click)="setFilter('held')">Held</button>
+    </nav>
+  </header>
+
+  <aside class="strip" aria-label="Live routes">
+    @if (visibleRuns().length === 0) {
+      <div class="empty">
+        <p>No routes on the frame.</p>
+        <p>Set the demo agent and throw a train onto the diagram. It will sit at danger until you pull the lever.</p>
+        <button type="button" class="lever" [disabled]="busy()" (click)="setRoute()">
+          {{ busy() ? 'Setting…' : 'Set a route' }}
+        </button>
+      </div>
+    } @else {
+      <ul>
+        @for (run of visibleRuns(); track run.id) {
+          <li>
+            <button
+              type="button"
+              class="route"
+              [ngClass]="lampFor(run.status)"
+              [class.selected]="selected()?.id === run.id"
+              (click)="select(run)"
+            >
+              <span class="lamp" [attr.data-lamp]="lampFor(run.status)" aria-hidden="true"></span>
+              <span class="route-copy">
+                <span class="route-name">{{ run.agent_name || 'agent' }}</span>
+                <span class="route-meta">{{ run.status.replace('_', ' ') }} · {{ ageLabel(run.created_at) }}</span>
+              </span>
+            </button>
+          </li>
+        }
+      </ul>
+    }
+  </aside>
+
+  <main class="field">
+    @if (error()) {
+      <p class="fault" role="alert">{{ error() }}</p>
+    }
+    <app-diagram [graph]="graph()" [label]="'Route ' + (selected()?.id || '')" (decide)="decide($event)" />
+    @if (selected()?.status === 'awaiting_approval' && selected()?.pending_action; as action) {
+      <section class="hold">
+        <p class="hold-tool">{{ action.tool }} held at danger</p>
+        <p class="hold-why">{{ action.rationale }}</p>
+        <pre class="hold-params">{{ action.params | json }}</pre>
+      </section>
+    }
+  </main>
+</div>

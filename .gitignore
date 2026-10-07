@@ -1,0 +1,27 @@
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+dist/
+build/
+
+# Angular / Node
+node_modules/
+dashboard/dist/
+dashboard/.angular/
+
+# Env & logs
+.env
+*.log
+
+# Tooling / agent state (not shipped)
+.superpowers/
+.impeccable/
+.worktrees/
+worktrees/

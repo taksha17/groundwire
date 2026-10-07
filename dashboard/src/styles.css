@@ -1,0 +1,54 @@
+@import '@fontsource/archivo-narrow/latin-400.css';
+@import '@fontsource/archivo-narrow/latin-600.css';
+@import '@fontsource/archivo-narrow/latin-700.css';
+@import '@fontsource/archivo/latin-400.css';
+@import '@fontsource/archivo/latin-600.css';
+
+:root {
+  color-scheme: dark;
+  --panel: #1c2820;
+  --ivory: #d9d4c6;
+  --amber: #c45c26;
+  --danger: #8b1e1e;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  background: var(--panel);
+  color: var(--ivory);
+  font-family: 'Archivo Narrow', 'Arial Narrow', sans-serif;
+}
+
+::selection {
+  background: var(--amber);
+  color: var(--panel);
+}
+
+:focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 2px;
+}
+
+input,
+textarea,
+button {
+  caret-color: var(--amber);
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #6e7a6a;
+}
+
+::-webkit-scrollbar-track {
+  background: #151c16;
+}
