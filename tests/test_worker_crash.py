@@ -58,6 +58,11 @@ async def route_stub(task: str, prompt: str):
     )
 
 
+@activity.defn(name="notify_approval")
+async def notify_stub(run_id: str, tenant_id: str, agent_name: str, pending_action: dict) -> dict:
+    return {"sent": False, "reason": "unconfigured"}
+
+
 @activity.defn(name="execute_tool")
 async def execute_stub(tool: str, params: dict) -> dict:
     return {"tool": tool, "params": params, "result": "executed"}
@@ -68,7 +73,7 @@ def _worker(client):
         client,
         task_queue=TASK_QUEUE,
         workflows=[AgentRunWorkflow],
-        activities=[persist_stub, audit_stub, plan_stub, route_stub, execute_stub],
+        activities=[persist_stub, audit_stub, plan_stub, route_stub, notify_stub, execute_stub],
     )
 
 

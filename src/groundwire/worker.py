@@ -9,6 +9,7 @@ from groundwire.temporal.client import connect_temporal_sdk
 from groundwire.temporal.activities import (
     configure_activities,
     execute_tool,
+    notify_approval,
     persist_run_progress,
     plan_run,
     route_model,
@@ -30,7 +31,14 @@ async def run_worker() -> None:
         client,
         task_queue=settings.temporal_task_queue,
         workflows=[AgentRunWorkflow],
-        activities=[persist_run_progress, write_audit, plan_run, route_model, execute_tool],
+        activities=[
+            persist_run_progress,
+            write_audit,
+            plan_run,
+            route_model,
+            notify_approval,
+            execute_tool,
+        ],
     )
     logger.info("Groundwire worker listening on %s", settings.temporal_task_queue)
     try:

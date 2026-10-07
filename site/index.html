@@ -171,7 +171,7 @@ footer a:hover{color:var(--text)}
 
 <header class="hero" id="top">
   <div class="wrap">
-    <span class="pill"><b>●</b> open-source control plane for AI agents · v0.2</span>
+    <span class="pill"><b>●</b> open-source control plane for AI agents · v1.0</span>
     <h1>Your agent decides <em>what</em>.<br>Groundwire makes sure <span class="grad">it actually happens</span>.</h1>
     <p class="sub">Durable execution that survives crashes. Approval gates that hold for minutes — or weeks. An audit trail for every action your agent takes.</p>
     <div class="cta">
@@ -196,7 +196,8 @@ footer a:hover{color:var(--text)}
       <div class="card"><span class="tag">durability</span><div class="ic">💥</div><h3>Long runs die silently</h3><p>One process restart and the framework loses everything — your agent starts the whole task over, or worse, half-finished work with no record.</p></div>
       <div class="card"><span class="tag">human-in-the-loop</span><div class="ic">🙋</div><h3>“Approvals” are bolted on</h3><p>An <span class="mono">input()</span> call isn't an approval gate. What happens when the approver doesn't respond for three days? Most frameworks have no answer.</p></div>
       <div class="card"><span class="tag">compliance</span><div class="ic">📜</div><h3>No real audit trail</h3><p>When an agent sends an email or calls a paid API — who authorized it, under what policy, and why? In regulated contexts "we don't know" is a showstopper.</p></div>
-      <div class="card"><span class="tag">identity</span><div class="ic">🔑</div><h3>Accountability is unanswerable</h3><p>Without SSO and scoped policies, "which human is responsible for this agent's actions?" has no answer. (Full OIDC governance lands in v0.3.)</p></div>
+      <div class="card"><span class="tag">identity</span><div class="ic">🔑</div><h3>Accountability is unanswerable</h3><p>Without SSO and scoped policies, "which human is responsible for this agent's actions?" has no answer. Groundwire ships OIDC via Keycloak with tenant-scoped roles: admins register agents, operators approve.</p></div>
+      <div class="card"><span class="tag">model spend</span><div class="ic">🧠</div><h3>No control over cost</h3><p>Every tool call burning your largest model? The built-in Go router picks the right-sized model per call, logs the decision, and lights the cost gauge — so spend is a signal you can watch, not a surprise.</p></div>
     </div>
   </div>
 </section>
@@ -217,7 +218,11 @@ footer a:hover{color:var(--text)}
       </div>
       <div class="window">
         <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="t">terminal</span></div>
-<pre><span class="cm"># register an agent — the email tool needs a human</span>
+<pre><span class="cm"># sign in via Keycloak (OIDC) → bearer token</span>
+<span class="kw">curl</span> -X POST localhost:8081/realms/groundwire/protocol/openid-connect/token \
+  -d <span class="st">'{"username":"admin","password":"admin",...}'</span>
+
+<span class="cm"># register an agent — the email tool needs a human</span>
 <span class="kw">curl</span> -X POST localhost:8000/v1/agents \
   -d <span class="st">'{"name":"ops-agent",
        "allowed_tools":["send_email"],

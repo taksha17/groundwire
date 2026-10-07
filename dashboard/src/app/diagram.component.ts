@@ -21,13 +21,19 @@ import { lampFor } from './status';
     `
       :host {
         display: block;
-        height: 100%;
-        min-height: 24rem;
-        flex: 1;
+        flex: 1 1 32rem;
+        min-height: 32rem;
+        height: 32rem;
+        position: relative;
+        z-index: 1;
+        background: #0a0d13;
+        border: 1px solid #2d374f;
+        border-radius: 16px;
+        box-shadow: 0 24px 70px rgb(0 0 0 / 0.5);
       }
       .diagram {
         width: 100%;
-        height: 100%;
+        height: 32rem;
         display: block;
         overflow: visible;
       }
@@ -84,15 +90,15 @@ export class DiagramComponent implements OnDestroy {
     const halo = defs
       .append('radialGradient')
       .attr('id', 'held-halo');
-    halo.append('stop').attr('offset', '0%').attr('stop-color', '#F07A7A').attr('stop-opacity', 0.55);
-    halo.append('stop').attr('offset', '55%').attr('stop-color', '#C43030').attr('stop-opacity', 0.22);
-    halo.append('stop').attr('offset', '100%').attr('stop-color', '#C43030').attr('stop-opacity', 0);
+    halo.append('stop').attr('offset', '0%').attr('stop-color', '#ff5d5d').attr('stop-opacity', 0.55);
+    halo.append('stop').attr('offset', '55%').attr('stop-color', '#ff5d5d').attr('stop-opacity', 0.18);
+    halo.append('stop').attr('offset', '100%').attr('stop-color', '#ff5d5d').attr('stop-opacity', 0);
 
     const glass: Record<string, [string, string, string]> = {
-      danger: ['#F07A7A', '#C43030', '#8B1E1E'],
-      amber: ['#F3B07A', '#E0763A', '#C45C26'],
-      clear: ['#9EE0B0', '#58A86F', '#3F7A52'],
-      dim: ['#8A9286', '#5A6258', '#4A5248'],
+      danger: ['#ffb3b3', '#ff5d5d', '#a32020'],
+      amber: ['#ffd9a0', '#ffb347', '#b96e00'],
+      clear: ['#b8f5d8', '#42d392', '#14804e'],
+      dim: ['#8b95ab', '#2a3143', '#1c2334'],
     };
     for (const [lamp, [hot, mid, base]] of Object.entries(glass)) {
       const grad = defs
@@ -114,12 +120,12 @@ export class DiagramComponent implements OnDestroy {
         .attr('x', width / 2)
         .attr('y', height / 2)
         .attr('text-anchor', 'middle')
-        .attr('fill', '#D9D4C6')
-        .attr('font-family', '"Space Grotesk", "Archivo Narrow", sans-serif')
+        .attr('fill', '#8b95ab')
+        .attr('font-family', '"Space Grotesk", ui-sans-serif, sans-serif')
         .attr('font-size', 20)
         .attr('font-weight', 500)
-        .attr('letter-spacing', '0.3em')
-        .attr('opacity', 0.85)
+        .attr('letter-spacing', '0.12em')
+        .attr('opacity', 0.9)
         .text('SELECT A ROUTE');
       return;
     }
@@ -143,19 +149,19 @@ export class DiagramComponent implements OnDestroy {
         [(x1 + x2) / 2, y],
         [x2 - nodeW / 2, y],
       ])!;
-      svg.append('path').attr('d', d).attr('fill', 'none').attr('stroke', '#1c2820').attr('stroke-width', 14);
+      svg.append('path').attr('d', d).attr('fill', 'none').attr('stroke', '#0a0d13').attr('stroke-width', 14);
       svg
         .append('path')
         .attr('d', d)
         .attr('fill', 'none')
-        .attr('stroke', '#8A6A32')
+        .attr('stroke', '#c9a86a')
         .attr('stroke-width', 6)
-        .attr('stroke-linecap', 'square');
+        .attr('stroke-linecap', 'round');
       const flow = svg
         .append('path')
         .attr('d', d)
         .attr('fill', 'none')
-        .attr('stroke', '#D9D4C6')
+        .attr('stroke', '#f2ead8')
         .attr('stroke-width', 1.5)
         .attr('stroke-dasharray', '10 8')
         .attr('opacity', 0.7);
@@ -177,18 +183,19 @@ export class DiagramComponent implements OnDestroy {
       g.append('rect')
         .attr('width', nodeW)
         .attr('height', nodeH)
-        .attr('rx', 3)
-        .attr('fill', heldStroke ? '#161010' : '#10160f')
-        .attr('stroke', heldStroke ? '#F07A7A' : '#D9D4C6')
-        .attr('stroke-width', 1.6)
-        .attr('stroke-opacity', heldStroke ? 0.85 : 1);
+        .attr('rx', 12)
+        .attr('fill', heldStroke ? '#1a1014' : '#131826')
+        .attr('stroke', heldStroke ? '#ff5d5d' : '#232b3d')
+        .attr('stroke-width', 1.4)
+        .attr('stroke-opacity', heldStroke ? 0.9 : 1);
       g.append('rect')
         .attr('x', 6)
         .attr('y', 6)
         .attr('width', nodeW - 12)
         .attr('height', nodeH - 12)
+        .attr('rx', 9)
         .attr('fill', 'none')
-        .attr('stroke', '#2a352c');
+        .attr('stroke', '#2d374f');
       const lamp = lampFor(node.status);
       const held = node.status === 'awaiting_approval';
       if (held) {
@@ -213,7 +220,7 @@ export class DiagramComponent implements OnDestroy {
         .attr('cy', 28)
         .attr('r', 11)
         .attr('fill', `url(#lamp-glass-${lamp})`)
-        .attr('stroke', '#D9D4C6')
+        .attr('stroke', '#2d374f')
         .attr('stroke-width', 0.8)
         .attr('filter', 'url(#lamp-glow)');
       g.append('circle').attr('cx', 22).attr('cy', 24).attr('r', 3.2).attr('fill', '#fff').attr('opacity', 0.55);
@@ -231,27 +238,27 @@ export class DiagramComponent implements OnDestroy {
       g.append('text')
         .attr('x', 46)
         .attr('y', 22)
-        .attr('fill', '#D9D4C6')
+        .attr('fill', '#8b95ab')
         .attr('font-family', mono)
         .attr('font-size', 10)
-        .attr('letter-spacing', '0.16em')
-        .attr('opacity', 0.8)
+        .attr('letter-spacing', '0.08em')
+        .attr('opacity', 0.9)
         .text(node.type.replace('_', ' ').toUpperCase());
       g.append('text')
         .attr('x', 46)
         .attr('y', 43)
-        .attr('fill', '#D9D4C6')
-        .attr('font-family', '"Space Grotesk", "Archivo Narrow", sans-serif')
-        .attr('font-size', 16)
+        .attr('fill', '#e8ecf6')
+        .attr('font-family', '"Space Grotesk", ui-sans-serif, sans-serif')
+        .attr('font-size', 15)
         .attr('font-weight', 600)
         .text(node.name);
       g.append('text')
         .attr('x', 22)
         .attr('y', 78)
-        .attr('fill', lamp === 'danger' ? '#F07A7A' : '#C45C26')
+        .attr('fill', lamp === 'danger' ? '#ff5d5d' : '#ffb347')
         .attr('font-family', mono)
         .attr('font-size', 11)
-        .attr('letter-spacing', '0.1em')
+        .attr('letter-spacing', '0.04em')
         .text(node.status.replace('_', ' '));
 
       if (node.status === 'awaiting_approval') {
@@ -282,13 +289,14 @@ export class DiagramComponent implements OnDestroy {
       .attr('type', 'button')
       .attr('class', 'lever')
       .text(label)
-      .style('font', '600 11px "Space Grotesk", "Archivo Narrow", sans-serif')
-      .style('letter-spacing', '0.1em')
-      .style('text-transform', 'uppercase')
-      .style('background', 'linear-gradient(180deg, #c4a056, #8a6a32 55%, #5c441c)')
-      .style('color', '#070a08')
-      .style('border', '1px solid #d9d4c6')
-      .style('padding', '7px 10px')
+      .style('font', '600 12px "Space Grotesk", ui-sans-serif, sans-serif')
+      .style('letter-spacing', '0.02em')
+      .style('text-transform', 'none')
+      .style('background', decision === 'approve' ? 'linear-gradient(135deg, #c9a86a, #a8874b)' : '#221d12')
+      .style('color', decision === 'approve' ? '#141009' : '#f2ead8')
+      .style('border', decision === 'approve' ? '0' : '1px solid #4d4331')
+      .style('border-radius', '8px')
+      .style('padding', '8px 14px')
       .style('cursor', 'pointer')
       .on('click', (event: Event) => {
         event.stopPropagation();

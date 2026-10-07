@@ -1,8 +1,15 @@
 <div class="box">
   <header class="plate">
-    <div class="identity">
-      <p class="plate-name">Groundwire</p>
-      <p class="plate-frame">{{ selected()?.agent_name || 'signal box unset' }}</p>
+    <div class="logo">
+      <span class="lamps" aria-hidden="true">
+        <span class="bead amber"></span>
+        <span class="bead danger"></span>
+        <span class="bead clear"></span>
+      </span>
+      <div class="identity">
+        <p class="plate-name">Groundwire</p>
+        <p class="plate-frame">{{ selected()?.agent_name || 'signal box unset' }}</p>
+      </div>
     </div>
     <nav class="filters" aria-label="Route frame">
       <button type="button" [class.on]="filter() === 'all'" (click)="setFilter('all')">All routes</button>
@@ -48,8 +55,9 @@
               <span class="lamp" [attr.data-lamp]="lampFor(run.status)" aria-hidden="true"></span>
               <span class="route-copy">
                 <span class="route-name">{{ run.agent_name || 'agent' }}</span>
-                <span class="route-meta">{{ run.status.replace('_', ' ') }} · {{ ageLabel(run.created_at) }}</span>
+                <span class="route-meta">{{ ageLabel(run.created_at) }}</span>
               </span>
+              <span class="st3">{{ run.status.replace('_', ' ') }}</span>
             </button>
           </li>
         }

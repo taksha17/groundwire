@@ -11,6 +11,7 @@ from groundwire.temporal.workflows import AgentRunWorkflow
 
 TASK_QUEUE = "test-agent-runs"
 executed: list[dict] = []
+notified: list[dict] = []
 
 
 def _input() -> RunWorkflowInput:
@@ -64,6 +65,19 @@ async def route_stub(task: str, prompt: str):
     )
 
 
+@activity.defn(name="notify_approval")
+async def notify_stub(run_id: str, tenant_id: str, agent_name: str, pending_action: dict) -> dict:
+    notified.append(
+        {
+            "run_id": run_id,
+            "tenant_id": tenant_id,
+            "agent_name": agent_name,
+            "pending_action": pending_action,
+        }
+    )
+    return {"sent": True, "status_code": 200}
+
+
 @activity.defn(name="execute_tool")
 async def execute_stub(tool: str, params: dict) -> dict:
     executed.append({"tool": tool, "params": params})
@@ -80,13 +94,14 @@ async def _wait_status(handle, expected: str) -> None:
 
 async def test_workflow_pauses_until_approval_then_executes():
     executed.clear()
+    notified.clear()
     run_input = _input()
     async with await WorkflowEnvironment.start_time_skipping() as env:
         async with Worker(
             env.client,
             task_queue=TASK_QUEUE,
             workflows=[AgentRunWorkflow],
-            activities=[persist_stub, audit_stub, plan_stub, route_stub, execute_stub],
+            activities=[persist_stub, audit_stub, plan_stub, route_stub, notify_stub, execute_stub],
         ):
             handle = await env.client.start_workflow(
                 AgentRunWorkflow.run,
@@ -99,6 +114,8 @@ async def test_workflow_pauses_until_approval_then_executes():
             pending = await handle.query(AgentRunWorkflow.pending_action)
             assert pending["model"] == "groundwire-small"
             assert executed == []
+            assert notified[0]["run_id"] == run_input.run_id
+            assert notified[0]["pending_action"]["tool"] == "send_email"
             await handle.signal(
                 AgentRunWorkflow.approval_decision,
                 ApprovalDecision(decision="approve", actor="tester"),
@@ -121,7 +138,7 @@ async def test_workflow_reject_does_not_execute_tool():
             env.client,
             task_queue=TASK_QUEUE,
             workflows=[AgentRunWorkflow],
-            activities=[persist_stub, audit_stub, plan_stub, route_stub, execute_stub],
+            activities=[persist_stub, audit_stub, plan_stub, route_stub, notify_stub, execute_stub],
         ):
             handle = await env.client.start_workflow(
                 AgentRunWorkflow.run,
@@ -149,7 +166,7 @@ async def test_workflow_edit_and_approve_uses_edited_params():
             env.client,
             task_queue=TASK_QUEUE,
             workflows=[AgentRunWorkflow],
-            activities=[persist_stub, audit_stub, plan_stub, route_stub, execute_stub],
+            activities=[persist_stub, audit_stub, plan_stub, route_stub, notify_stub, execute_stub],
         ):
             handle = await env.client.start_workflow(
                 AgentRunWorkflow.run,

@@ -74,6 +74,18 @@ class AgentRunWorkflow:
                         input.run_id, self._status, "approval_gate", self._pending_action
                     )
                     await self._audit(input, "approval_requested", "system", self._pending_action)
+                    if workflow.patched("approval-webhook"):
+                        ping = await workflow.execute_activity(
+                            "notify_approval",
+                            args=[
+                                input.run_id,
+                                input.tenant_id,
+                                input.agent_name,
+                                self._pending_action,
+                            ],
+                            start_to_close_timeout=timedelta(seconds=12),
+                        )
+                        await self._audit(input, "approval_notified", "system", ping)
                     await workflow.wait_condition(lambda: self._decision is not None)
                     decision = self._decision
                     assert decision is not None

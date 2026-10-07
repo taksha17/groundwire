@@ -65,7 +65,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     _temporal = None
 
 
-app = FastAPI(title="Groundwire", version="0.4.0", lifespan=lifespan)
+app = FastAPI(title="Groundwire", version="1.0.0", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:4200", "http://127.0.0.1:4200", "*"],

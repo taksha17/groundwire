@@ -123,6 +123,11 @@ services:
       DATABASE_URL: postgresql+asyncpg://groundwire:groundwire@postgres:5432/groundwire
       TEMPORAL_ADDRESS: temporal:7233
       ROUTER_URL: http://router:8090
+      APPROVAL_WEBHOOK_URL: ${APPROVAL_WEBHOOK_URL:-}
+      APPROVAL_WEBHOOK_SECRET: ${APPROVAL_WEBHOOK_SECRET:-}
+      DASHBOARD_PUBLIC_URL: ${DASHBOARD_PUBLIC_URL:-http://localhost:4200}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       postgres:
         condition: service_healthy

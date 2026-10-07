@@ -1,6 +1,6 @@
 [project]
 name = "groundwire"
-version = "0.1.0"
+version = "1.0.0"
 description = "Durable, governed infrastructure for AI agents"
 readme = "README.md"
 license = { text = "Apache-2.0" }

@@ -141,3 +141,52 @@ async def route_model(task: str, prompt: str) -> RouteDecision:
         output_tokens=int(body.get("output_tokens") or 0),
         routed=bool(body.get("routed")),
     )
+
+
+def build_approval_ping(
+    *,
+    run_id: str,
+    tenant_id: str,
+    agent_name: str,
+    pending_action: dict,
+    dashboard_url: str,
+) -> dict:
+    return {
+        "event": "approval_requested",
+        "run_id": run_id,
+        "tenant_id": tenant_id,
+        "agent_name": agent_name,
+        "tool": pending_action.get("tool"),
+        "pending_action": pending_action,
+        "dashboard_url": dashboard_url.rstrip("/"),
+    }
+
+
+@activity.defn
+async def notify_approval(
+    run_id: str,
+    tenant_id: str,
+    agent_name: str,
+    pending_action: dict,
+) -> dict:
+    settings = get_settings()
+    url = settings.approval_webhook_url.strip()
+    ping = build_approval_ping(
+        run_id=run_id,
+        tenant_id=tenant_id,
+        agent_name=agent_name,
+        pending_action=pending_action,
+        dashboard_url=settings.dashboard_public_url,
+    )
+    if not url:
+        return {"sent": False, "reason": "unconfigured"}
+    headers = {"Content-Type": "application/json", "User-Agent": "groundwire-worker/1.0"}
+    if settings.approval_webhook_secret:
+        headers["Authorization"] = f"Bearer {settings.approval_webhook_secret}"
+    try:
+        async with httpx.AsyncClient(timeout=8.0) as client:
+            response = await client.post(url, json=ping, headers=headers)
+            response.raise_for_status()
+    except httpx.HTTPError as exc:
+        return {"sent": False, "reason": str(exc)}
+    return {"sent": True, "status_code": response.status_code}

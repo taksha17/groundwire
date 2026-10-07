@@ -13,15 +13,15 @@ import { Metrics } from './models';
               <radialGradient [attr.id]="'glass-' + gauge.id" cx="38%" cy="32%" r="70%">
                 <stop offset="0%" [attr.stop-color]="gauge.hot" />
                 <stop offset="70%" [attr.stop-color]="gauge.color" />
-                <stop offset="100%" stop-color="#0b100c" />
+                <stop offset="100%" stop-color="#0a0d13" />
               </radialGradient>
             </defs>
-            <circle cx="80" cy="78" r="58" fill="#0b100c" stroke="#d9d4c6" stroke-width="2" />
+            <circle cx="80" cy="78" r="58" fill="#0a0d13" stroke="#2d374f" stroke-width="2" />
             <circle cx="80" cy="78" r="50" [attr.fill]="'url(#glass-' + gauge.id + ')'" opacity="0.35" />
             <path
               d="M 38 110 A 48 48 0 1 1 122 110"
               fill="none"
-              stroke="#2a352c"
+              stroke="#232b3d"
               stroke-width="6"
               stroke-linecap="round"
             />
@@ -44,7 +44,7 @@ import { Metrics } from './models';
               stroke-linecap="round"
               [attr.transform]="'rotate(' + gauge.angle + ' 80 78)'"
             />
-            <circle cx="80" cy="78" r="4" fill="#d9d4c6" />
+            <circle cx="80" cy="78" r="4" fill="#f2ead8" />
           </svg>
           <p class="reading">{{ gauge.reading }}</p>
           <p class="caption">{{ gauge.label }}</p>
@@ -62,10 +62,11 @@ import { Metrics } from './models';
       }
       .gauge {
         text-align: center;
-        background: linear-gradient(180deg, #1a221b, #10160f);
-        border: 1px solid #d9d4c6;
-        box-shadow: 0 10px 18px rgb(0 0 0 / 0.35);
-        padding: 0.6rem 0.4rem 0.85rem;
+        background: #131826;
+        border: 1px solid #232b3d;
+        border-radius: 14px;
+        box-shadow: 0 14px 40px rgb(0 0 0 / 0.35);
+        padding: 0.85rem 0.5rem 1rem;
       }
       svg {
         width: 100%;
@@ -76,14 +77,16 @@ import { Metrics } from './models';
         margin: 0;
         font-size: 1.35rem;
         font-weight: 700;
-        letter-spacing: 0.08em;
+        letter-spacing: -0.3px;
+        font-family: 'Space Grotesk', ui-sans-serif, sans-serif;
       }
       .caption {
         margin: 0.15rem 0 0;
-        color: #c45c26;
-        letter-spacing: 0.14em;
+        color: #c9a86a;
+        font-family: 'IBM Plex Mono', ui-monospace, monospace;
+        letter-spacing: 1.2px;
         text-transform: uppercase;
-        font-size: 0.72rem;
+        font-size: 0.7rem;
       }
       @media (max-width: 900px) {
         .bank {
@@ -103,10 +106,10 @@ export class InstrumentsComponent {
     const hold = data?.avg_approval_seconds ?? 0;
     const cost = data?.cost_per_run ?? 0;
     return [
-      meter('clear', 'Clear', `${Math.round(success * 100)}%`, success, 1, '#3f7a52', '#7dce96'),
-      meter('time', 'Duration', formatSeconds(duration), duration, 120, '#c45c26', '#e89a5a'),
-      meter('hold', 'Turnaround', formatSeconds(hold), hold, 120, '#8b1e1e', '#d45c5c'),
-      meter('cost', 'Cost / run', formatCost(cost), cost, 0.01, '#8a6a32', '#d4b56a'),
+      meter('clear', 'Clear', `${Math.round(success * 100)}%`, success, 1, '#42d392', '#b8f5d8'),
+      meter('time', 'Duration', formatSeconds(duration), duration, 120, '#ffb347', '#ffd9a0'),
+      meter('hold', 'Turnaround', formatSeconds(hold), hold, 120, '#ff5d5d', '#ffb3b3'),
+      meter('cost', 'Cost / run', formatCost(cost), cost, 0.01, '#c9a86a', '#f2ead8'),
     ];
   }
 }

@@ -6,7 +6,7 @@
 
 **The pause is the product.** Your agent framework decides *what* to do — Groundwire guarantees it survives crashes, stops for a human when it matters, and leaves a paper trail.
 
-[![Status](https://img.shields.io/badge/release-v0.4%20%E2%80%94%20Routing-orange)](Groundwire_PRD.md)
+[![Status](https://img.shields.io/badge/release-v1.0%20%E2%80%94%20Public%20launch-green)](Groundwire_PRD.md)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-%E2%89%A53.12-blue)]()
 [![Angular](https://img.shields.io/badge/dashboard-Angular%2019-red)]()
@@ -40,6 +40,7 @@ An open-source **control plane** that sits *underneath* your agent framework as 
 | 📖 **Audit records** | ✅ shipped | Queryable occurrence book: filter by agent, tenant, date, outcome; export JSON/CSV; per-run timeline. |
 | 🔐 **Enterprise identity** | ✅ shipped | OIDC via Keycloak. Tenant-scoped RBAC: admin registers agents, operator approves. |
 | 🧠 **Model routing** | ✅ shipped | Go service picks `groundwire-small` vs `groundwire-large` per tool call, logs the decision, and lights the cost gauge. |
+| 🧩 **Example agents** | ✅ shipped | LangChain and CrewAI draft an ops email; Groundwire holds `send_email` until a human approves. |
 
 ## Quick start
 
@@ -75,6 +76,15 @@ Ports taken? `GROUNDWIRE_API_PORT=18000 GROUNDWIRE_DASHBOARD_PORT=4201 docker co
 ### Try it: a gated agent in 60 seconds
 
 **From the dashboard** — open the signal box, click **Set a route**. That registers the demo agent and starts a `send_email` run. When the lamp goes red (`awaiting_approval`), pull **Approve** or **Reject** directly on the DAG node. Now for the fun part: `docker compose restart worker` while it's held — the run is still there, waiting. *That's the point.*
+
+Want a ping instead of watching the box? Point the worker at a webhook. The run still pauses if the hook is down.
+
+```bash
+python examples/webhook_sink.py
+APPROVAL_WEBHOOK_URL=http://host.docker.internal:8091 docker compose up -d worker
+```
+
+The POST body is JSON: `event`, `run_id`, `agent_name`, `tool`, `pending_action`, `dashboard_url`. Optional `APPROVAL_WEBHOOK_SECRET` is sent as a bearer token.
 
 **From the API** (compose requires a bearer token):
 
@@ -116,6 +126,17 @@ curl -sS -X POST http://localhost:8000/v1/runs/<RUN_ID>/approvals \
 ```
 
 Endpoints also support `reject` and **edit-and-approve** (modify parameters before allowing execution), and the OpenAPI docs are at [`/docs`](http://localhost:8000/docs).
+
+### Bring your own framework
+
+LangChain and CrewAI examples live in [`examples/`](examples/README.md). They plan the email, then hand off to `GroundwireClient` so the send still sits at danger in the box:
+
+```bash
+pip install -e .
+GROUNDWIRE_API_URL=http://localhost:18000 \
+GROUNDWIRE_USERNAME=admin GROUNDWIRE_PASSWORD=admin \
+python examples/langchain/ops_email.py --incident "api latency"
+```
 
 ## Architecture
 
@@ -178,8 +199,11 @@ groundwire/
 │   └── temporal/         # AgentRunWorkflow, activities, payloads
 ├── dashboard/            # Angular "signal box" + nginx-served build
 ├── router/               # Go model-router (POST /v1/route)
-├── tests/                # pytest: registration, runs, approvals, crash-recovery, routing
+├── examples/             # LangChain + CrewAI → GroundwireClient
+├── tests/                # pytest: registration, runs, approvals, crash-recovery, routing, client
 ├── docker-compose.yml    # postgres + keycloak + temporal + router + api + worker + dashboard
+├── CONTRIBUTING.md
+├── docs/architecture.md
 ├── deploy/               # Keycloak realm import + Postgres init (off-root `.data/`)
 ├── Groundwire_PRD.md     # full product spec
 ├── DESIGN.md             # operator-surface design system
@@ -206,7 +230,7 @@ npm start                          # dev server on :4200, proxies /v1 → :8000
 | **v0.2 — Visibility** | Angular signal box: run list, D3 DAG, approval inbox | ✅ shipped |
 | **v0.3 — Governance** | Keycloak + OIDC, multi-tenant policies, full audit query UI | ✅ shipped |
 | **v0.4 — Routing & polish** | Go model-router, Instruments gauges (incl. cost / run), first public docs pass | ✅ shipped |
-| **v1.0 — Public launch** | LangChain + CrewAI example agents, hardened docs, contribution guide | planned |
+| **v1.0 — Public launch** | LangChain + CrewAI example agents, hardened docs, contribution guide | ✅ shipped |
 
 ## Who this is for
 
@@ -218,7 +242,7 @@ npm start                          # dev server on :4200, proxies /v1 → :8000
 
 ## Contributing
 
-Early days — design feedback, issues, and "have you thought about…" are all welcome. The roadmap shows where help lands best; a full contribution guide ships with v1.0.
+See [`CONTRIBUTING.md`](CONTRIBUTING.md). Issues are the discussion channel; keep the operator surface a signal box (`DESIGN.md`), and keep Docker/data off `/`.
 
 ## License
 
@@ -228,7 +252,7 @@ Early days — design feedback, issues, and "have you thought about…" are all 
 
 <div align="center">
 
-**Full spec:** [`Groundwire_PRD.md`](Groundwire_PRD.md) · **Design:** [`DESIGN.md`](DESIGN.md) · **Product:** [`PRODUCT.md`](PRODUCT.md)
+**Full spec:** [`Groundwire_PRD.md`](Groundwire_PRD.md) · **Design:** [`DESIGN.md`](DESIGN.md) · **Product:** [`PRODUCT.md`](PRODUCT.md) · **Contribute:** [`CONTRIBUTING.md`](CONTRIBUTING.md)
 
 *Built by [Taksha Thosani](https://github.com/taksha17)*
 

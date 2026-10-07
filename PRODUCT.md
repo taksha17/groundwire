@@ -20,7 +20,7 @@ Also served: platform/infra engineers on a shared control plane; compliance revi
 
 Groundwire is the durable execution and governance layer under agent frameworks. It does not write agent logic. It guarantees a run survives crashes, can pause indefinitely for a human decision, and leaves a paper trail.
 
-v0.4 success: the same signal box, now behind Keycloak, with a Go model-router on the run path. Tenant-scoped data. Operator cannot register agents. Approvals are tied to the signed-in identity. The occurrence book is queryable and exportable. Cost / run is no longer dark once a routed run exists.
+v1.0 success: the signal box behind Keycloak, a Go model-router on the run path, and example agents that keep their own framework. LangChain or CrewAI drafts the work; Groundwire holds the gated tool. Tenant-scoped data. Operator cannot register agents. Approvals are tied to the signed-in identity. Cost / run lights once a routed run exists.
 
 ## Positioning
 
@@ -32,8 +32,8 @@ The operator keeps a live board up while agents run, and also comes in from an a
 
 ## Capabilities and Constraints
 
-- v0.4 surfaces: live run list; DAG with a router node; approval levers; occurrence book; analog instrument gauges including cost / run; Keycloak sign-in; Go model-router. Set a route is always on the plate.
-- Not yet: Slack/email notifications, visual workflow builder, LangChain/CrewAI examples.
+- v1.0 surfaces: live run list; DAG with a router node; approval levers; occurrence book; analog instrument gauges including cost / run; Keycloak sign-in; Go model-router; LangChain and CrewAI examples via `GroundwireClient`. Set a route is always on the plate.
+- Approval pings: optional `APPROVAL_WEBHOOK_URL` on the worker when a run hits danger. Email/Slack not yet. Visual workflow builder is out.
 - Status vocabulary is fixed: `planning`, `awaiting_approval`, `executing`, `completed`, `failed`, `rejected`.
 - License Apache 2.0; no Highcharts.
 

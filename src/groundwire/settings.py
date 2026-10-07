@@ -19,6 +19,9 @@ class Settings(BaseSettings):
     oidc_audience: str = "groundwire-api"
     oidc_public_key: str = ""
     router_url: str = ""
+    approval_webhook_url: str = ""
+    approval_webhook_secret: str = ""
+    dashboard_public_url: str = "http://localhost:4200"
 
 
 def get_settings() -> Settings:
