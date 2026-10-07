@@ -25,3 +25,5 @@ dashboard/.angular/
 .impeccable/
 .worktrees/
 worktrees/
+
+.qwen/

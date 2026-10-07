@@ -1,9 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(.venv/bin/pip *)",
-      "Bash(.venv/bin/pytest *)"
-    ]
-  },
-  "$version": 4
-}
