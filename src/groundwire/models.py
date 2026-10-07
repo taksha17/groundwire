@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from uuid import UUID, uuid4
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String
 from sqlalchemy.dialects.sqlite import JSON as SQLITE_JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.types import JSON, Uuid
@@ -71,6 +71,18 @@ class Step(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, onupdate=_utcnow)
 
     run: Mapped[Run] = relationship(back_populates="steps")
+
+
+class AccessPolicy(Base):
+    __tablename__ = "access_policies"
+
+    id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
+    tenant_id: Mapped[UUID] = mapped_column(Uuid, nullable=False)
+    role: Mapped[str] = mapped_column(String(64), nullable=False)
+    can_register_agents: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    approvable_tools: Mapped[list] = mapped_column(
+        JSON().with_variant(SQLITE_JSON(), "sqlite"), nullable=False
+    )
 
 
 class AuditRecord(Base):

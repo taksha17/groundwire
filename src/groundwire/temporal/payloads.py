@@ -31,3 +31,14 @@ class ToolCall:
 class PlanResult:
     summary: str
     tool_calls: list[ToolCall] = field(default_factory=list)
+
+
+@dataclass
+class RouteDecision:
+    model: str
+    provider: str
+    reason: str
+    estimated_cost_usd: float
+    input_tokens: int = 0
+    output_tokens: int = 0
+    routed: bool = False

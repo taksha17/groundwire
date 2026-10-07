@@ -29,13 +29,23 @@ async def register_agent(
     return agent
 
 
-async def get_agent(session: AsyncSession, agent_id: UUID) -> AgentDefinition | None:
-    result = await session.execute(select(AgentDefinition).where(AgentDefinition.id == agent_id))
+async def get_agent(
+    session: AsyncSession,
+    agent_id: UUID,
+    *,
+    tenant_id: UUID | None = None,
+) -> AgentDefinition | None:
+    stmt = select(AgentDefinition).where(AgentDefinition.id == agent_id)
+    if tenant_id is not None:
+        stmt = stmt.where(AgentDefinition.tenant_id == tenant_id)
+    result = await session.execute(stmt)
     return result.scalar_one_or_none()
 
 
-async def list_agents(session: AsyncSession) -> list[AgentDefinition]:
+async def list_agents(session: AsyncSession, *, tenant_id: UUID) -> list[AgentDefinition]:
     result = await session.execute(
-        select(AgentDefinition).order_by(AgentDefinition.created_at.desc())
+        select(AgentDefinition)
+        .where(AgentDefinition.tenant_id == tenant_id)
+        .order_by(AgentDefinition.created_at.desc())
     )
     return list(result.scalars().all())

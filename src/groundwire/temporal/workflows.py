@@ -4,7 +4,12 @@ from temporalio import workflow
 from temporalio.common import RetryPolicy
 from temporalio.exceptions import ActivityError
 
-from groundwire.temporal.payloads import ApprovalDecision, PlanResult, RunWorkflowInput
+from groundwire.temporal.payloads import (
+    ApprovalDecision,
+    PlanResult,
+    RouteDecision,
+    RunWorkflowInput,
+)
 
 
 @workflow.defn
@@ -31,6 +36,29 @@ class AgentRunWorkflow:
             last_result = None
             for call in plan.tool_calls:
                 params = call.params
+                route: RouteDecision | None = None
+                if workflow.patched("model-router"):
+                    route = await workflow.execute_activity(
+                        "route_model",
+                        args=[call.tool, f"{call.rationale}\n{params}"],
+                        start_to_close_timeout=timedelta(seconds=15),
+                        result_type=RouteDecision,
+                    )
+                    await self._audit(
+                        input,
+                        "model_routed",
+                        "router",
+                        {
+                            "tool": call.tool,
+                            "model": route.model,
+                            "provider": route.provider,
+                            "reason": route.reason,
+                            "estimated_cost_usd": route.estimated_cost_usd,
+                            "input_tokens": route.input_tokens,
+                            "output_tokens": route.output_tokens,
+                            "routed": route.routed,
+                        },
+                    )
                 requires_approval = call.tool in (input.approval_policy.get("require_approval_for") or [])
                 if requires_approval:
                     self._pending_action = {
@@ -38,6 +66,9 @@ class AgentRunWorkflow:
                         "params": params,
                         "rationale": call.rationale,
                     }
+                    if route is not None:
+                        self._pending_action["model"] = route.model
+                        self._pending_action["estimated_cost_usd"] = route.estimated_cost_usd
                     self._status = "awaiting_approval"
                     await self._persist(
                         input.run_id, self._status, "approval_gate", self._pending_action

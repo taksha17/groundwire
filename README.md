@@ -6,7 +6,7 @@
 
 **The pause is the product.** Your agent framework decides *what* to do — Groundwire guarantees it survives crashes, stops for a human when it matters, and leaves a paper trail.
 
-[![Status](https://img.shields.io/badge/release-v0.2%20%E2%80%94%20Visibility-orange)](Groundwire_PRD.md)
+[![Status](https://img.shields.io/badge/release-v0.4%20%E2%80%94%20Routing-orange)](Groundwire_PRD.md)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-%E2%89%A53.12-blue)]()
 [![Angular](https://img.shields.io/badge/dashboard-Angular%2019-red)]()
@@ -37,9 +37,9 @@ An open-source **control plane** that sits *underneath* your agent framework as 
 | ⏳ **Durable execution** | ✅ shipped | Every run is a Temporal workflow. Crash mid-run, restart the worker, redeploy — the run resumes where it left off. Zero state loss (covered by `tests/test_worker_crash.py`). |
 | ✋ **First-class approval gates** | ✅ shipped | Any step can require human approval. The workflow durably pauses on a Temporal signal — minutes or weeks — until someone approves, rejects, or edits-and-approves. |
 | 🕸️ **Operator dashboard** | ✅ shipped | An Angular "railway signal box": live run strip with spectacle lamps, a D3 execution DAG, and brass levers for Approve / Reject right on the held node. |
-| 📖 **Audit records** | ✅ shipped | Every run, step, and approval decision is persisted and queryable. Full audit query UI ships in v0.3. |
-| 🔐 **Enterprise identity** | 🔜 v0.3 | OIDC SSO via Keycloak, federating to Azure AD / Okta / Google. |
-| 🧠 **Model routing** | 🔜 v0.4 | Go service routing each LLM call to the right-sized model, with logged decisions. |
+| 📖 **Audit records** | ✅ shipped | Queryable occurrence book: filter by agent, tenant, date, outcome; export JSON/CSV; per-run timeline. |
+| 🔐 **Enterprise identity** | ✅ shipped | OIDC via Keycloak. Tenant-scoped RBAC: admin registers agents, operator approves. |
+| 🧠 **Model routing** | ✅ shipped | Go service picks `groundwire-small` vs `groundwire-large` per tool call, logs the decision, and lights the cost gauge. |
 
 ## Quick start
 
@@ -49,13 +49,26 @@ cd groundwire
 docker compose up --build
 ```
 
-One command brings up the whole stateful backend — **Postgres, Temporal (+ UI), the FastAPI control plane, the durable worker, and the dashboard**. First boot takes a minute while Temporal auto-setup runs.
+One command brings up the whole stateful backend — **Postgres, Keycloak, Temporal (+ UI), the Go model-router, the FastAPI control plane, the durable worker, and the dashboard**. First boot takes a minute while Temporal auto-setup and Keycloak import the demo realm.
+
+Host-build the router binary first (keeps a `golang` image off `/`):
+
+```bash
+GOCACHE="$PWD/.data/gocache" GOMODCACHE="$PWD/.data/gomodcache" \
+  CGO_ENABLED=0 go build -o router/groundwire-router ./router
+```
+
+The dashboard image copies a host `ng build` so a Node image never lands on `/`. From `dashboard/`: `npm ci && npm run build`.
 
 | Surface | URL |
 |---|---|
 | 🖥️ Dashboard (signal box) | http://localhost:4200 |
 | 🔌 Control plane API | http://localhost:8000 |
+| 🧠 Model router | http://localhost:8090 |
+| 🪪 Keycloak | http://localhost:8081 (realm `groundwire`) |
 | 🔭 Temporal UI | http://localhost:8088 |
+
+Sign in to the box as **admin / admin** (can register agents) or **operator / operator** (can approve, cannot register). Compose data lives in `./.data` on this volume, not on `/`.
 
 Ports taken? `GROUNDWIRE_API_PORT=18000 GROUNDWIRE_DASHBOARD_PORT=4201 docker compose up --build`
 
@@ -63,11 +76,18 @@ Ports taken? `GROUNDWIRE_API_PORT=18000 GROUNDWIRE_DASHBOARD_PORT=4201 docker co
 
 **From the dashboard** — open the signal box, click **Set a route**. That registers the demo agent and starts a `send_email` run. When the lamp goes red (`awaiting_approval`), pull **Approve** or **Reject** directly on the DAG node. Now for the fun part: `docker compose restart worker` while it's held — the run is still there, waiting. *That's the point.*
 
-**From the API:**
+**From the API** (compose requires a bearer token):
 
 ```bash
+TOKEN=$(curl -sS -X POST http://localhost:8081/realms/groundwire/protocol/openid-connect/token \
+  -d client_id=groundwire-dashboard \
+  -d grant_type=password \
+  -d username=admin \
+  -d password=admin | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
+
 # 1. Register an agent — name, allowed tools, approval policy
 curl -sS -X POST http://localhost:8000/v1/agents \
+  -H "Authorization: Bearer $TOKEN" \
   -H 'Content-Type: application/json' \
   -d '{
     "name": "demo-ops-agent",
@@ -77,6 +97,7 @@ curl -sS -X POST http://localhost:8000/v1/agents \
 
 # 2. Start a run (use the agent_id from step 1)
 curl -sS -X POST http://localhost:8000/v1/runs \
+  -H "Authorization: Bearer $TOKEN" \
   -H 'Content-Type: application/json' \
   -d '{
     "agent_id": "<AGENT_ID>",
@@ -89,8 +110,9 @@ curl -sS -X POST http://localhost:8000/v1/runs \
 
 # 3. The run plans, then durably pauses before send_email. Decide:
 curl -sS -X POST http://localhost:8000/v1/runs/<RUN_ID>/approvals \
+  -H "Authorization: Bearer $TOKEN" \
   -H 'Content-Type: application/json' \
-  -d '{"decision": "approve", "actor": "you"}'
+  -d '{"decision": "approve"}'
 ```
 
 Endpoints also support `reject` and **edit-and-approve** (modify parameters before allowing execution), and the OpenAPI docs are at [`/docs`](http://localhost:8000/docs).
@@ -107,18 +129,20 @@ Endpoints also support `reject` and **edit-and-approve** (modify parameters befo
          ▼                               │
 ┌────────────────────────────────────────▼───────────┐
 │          FastAPI control plane :8000                │
-│  agents · runs · graph · approve / reject / edit    │
+│  agents · runs · graph · approve · audit · OIDC     │
 └───────┬───────────────────────────────┬────────────┘
         ▼                               ▼
 ┌───────────────────┐         ┌──────────────────────┐
-│  Temporal  :7233   │         │  PostgreSQL           │
-│  AgentRunWorkflow —│         │  agent defs · runs ·  │
-│  durable steps +   │         │  approval decisions · │
-│  signal-backed     │         │  audit records        │
-│  approval gates    │         └──────────────────────┘
+│  Temporal  :7233   │         │  PostgreSQL + Keycloak │
+│  AgentRunWorkflow —│         │  agents · policies ·   │
+│  plan → route →    │         │  audit · OIDC :8081    │
+│  approve → tool    │         └──────────────────────┘
 └───────┬───────────┘
         ▼
-   Temporal UI :8088 (workflow history inspector)
+┌───────────────────┐         Temporal UI :8088
+│  Go router :8090   │
+│  small vs large    │
+└───────────────────┘
 ```
 
 **Why these tools, concretely:**
@@ -127,8 +151,10 @@ Endpoints also support `reject` and **edit-and-approve** (modify parameters befo
 |---|---|
 | **Temporal** | Purpose-built for long-running, crash-safe, signal-resumable workflows — exactly the approval-gate pattern, without a cron+queue hack |
 | **FastAPI** | Async-native, auto-generated OpenAPI docs, pydantic schemas straight from the Temporal payloads |
-| **PostgreSQL** | Temporal requires a real relational store; Postgres doubles as the source of truth for agents, runs, and audit records |
+| **PostgreSQL** | Temporal requires a real relational store; Postgres doubles as the source of truth for agents, runs, policies, and audit records |
+| **Keycloak** | Self-hostable OIDC issuer; demo realm ships with admin and operator users |
 | **Angular 19 + D3** | Structured framework for a long-lived ops tool; D3 because rendering a live execution DAG is literally what it's for |
+| **Go model-router** | Stdlib-only sidecar: pick a model, log cost, stay off the Python worker hot path |
 | **Docker Compose** | The same file is the dev environment *and* the single-VM deployment — no hidden setup |
 
 ## Inside the signal box
@@ -138,6 +164,7 @@ The operator surface is designed as a **railway signal box** — a dim instrumen
 - **Route strip** — every run as a row with a spectacle lamp: amber = executing, red = awaiting approval, green = completed. Filters: All routes / Live / Held (the approval inbox).
 - **Interlocking diagram** — a D3-rendered DAG of the run's steps, live as it executes.
 - **Levers** — Approve / Reject on the held node itself, with full context of what the agent wants to do and what it would touch.
+- **Occurrence book** — Register filter: tenant-scoped audit query, JSON/CSV export, and a per-route timeline under the diagram.
 
 ## Repository layout
 
@@ -150,8 +177,10 @@ groundwire/
 │   ├── services/         # agents · runs · approvals · graph
 │   └── temporal/         # AgentRunWorkflow, activities, payloads
 ├── dashboard/            # Angular "signal box" + nginx-served build
-├── tests/                # pytest: registration, runs, approvals, crash-recovery
-├── docker-compose.yml    # postgres + temporal + temporal-ui + api + worker + dashboard
+├── router/               # Go model-router (POST /v1/route)
+├── tests/                # pytest: registration, runs, approvals, crash-recovery, routing
+├── docker-compose.yml    # postgres + keycloak + temporal + router + api + worker + dashboard
+├── deploy/               # Keycloak realm import + Postgres init (off-root `.data/`)
 ├── Groundwire_PRD.md     # full product spec
 ├── DESIGN.md             # operator-surface design system
 └── PRODUCT.md            # positioning & product principles
@@ -175,8 +204,8 @@ npm start                          # dev server on :4200, proxies /v1 → :8000
 |---|---|---|
 | **v0.1 — Durable core** | FastAPI + Temporal + Postgres; runs survive worker crashes; gates pause/resume durably | ✅ shipped |
 | **v0.2 — Visibility** | Angular signal box: run list, D3 DAG, approval inbox | ✅ shipped |
-| **v0.3 — Governance** | Keycloak + OIDC, multi-tenant policies, full audit query UI | planned |
-| **v0.4 — Routing & polish** | Go model-router, metrics (Chart.js/ECharts), first public docs pass | planned |
+| **v0.3 — Governance** | Keycloak + OIDC, multi-tenant policies, full audit query UI | ✅ shipped |
+| **v0.4 — Routing & polish** | Go model-router, Instruments gauges (incl. cost / run), first public docs pass | ✅ shipped |
 | **v1.0 — Public launch** | LangChain + CrewAI example agents, hardened docs, contribution guide | planned |
 
 ## Who this is for

@@ -38,6 +38,27 @@ def test_graph_after_reject_skips_tool():
     assert by_id["send_email"].status == "skipped"
 
 
+def test_graph_includes_router_when_routed():
+    nodes, edges = build_run_graph(
+        status="awaiting_approval",
+        pending_action={
+            "tool": "send_email",
+            "params": {},
+            "rationale": "x",
+            "model": "groundwire-small",
+            "estimated_cost_usd": 0.0001,
+        },
+        events=["run_started", "plan_completed", "model_routed", "approval_requested"],
+    )
+    assert [node.id for node in nodes] == ["plan", "route", "approval", "send_email"]
+    assert nodes[1].name == "groundwire-small"
+    assert [(edge.source, edge.target) for edge in edges] == [
+        ("plan", "route"),
+        ("route", "approval"),
+        ("approval", "send_email"),
+    ]
+
+
 def test_graph_completed_executes_tool():
     nodes, _ = build_run_graph(
         status="completed",

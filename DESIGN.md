@@ -2,11 +2,11 @@
 
 <!-- impeccable:design-schema 1 -->
 
-Groundwire’s operator surface is a railway signal box: a dim enamel interior, a live route strip, and an interlocking diagram. Approval is a lever on a red signal, not a modal.
+Groundwire’s operator surface is a live railway signal box: enamel plate, glass spectacle lamps, brass rails on the interlocking diagram. Approval is a lever on a red signal, not a modal. Metrics are analog gauges (Instruments), not KPI cards.
 
 ## Surfaces
 
-- `dashboard` — Angular signal box at `/` (compose `:4200`). Left strip lists runs with spectacle lamps. The field is a D3 DAG. Held routes expose Approve / Reject on the approval node. Empty state offers **Set a route**.
+- `dashboard` — Angular signal box at `/` (compose `:4200`). Left strip lists runs with spectacle lamps. The field is a D3 DAG. Held routes expose Approve / Reject on the approval node. Empty state offers **Set a route**. **Register** is the occurrence book (audit query + CSV/JSON). Sign in lives on the instrument plate.
 
 ## Color
 
@@ -38,7 +38,9 @@ Restrained, forced by a dim instrument-panel interior.
 
 ## Controls
 
-- Filters: All routes / Live / Held (the inbox).
+- Filters: All routes / Live / Held / Register / Instruments.
+- **Set a route** stays on the plate even when the strip is populated.
+- Sign in / Sign out on the plate; the actor on a lever pull is the signed-in identity.
 - Route rows are full-width strip buttons with a lamp.
 - Approve / Reject are brass levers on the DAG node.
 

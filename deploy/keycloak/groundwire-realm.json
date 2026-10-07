@@ -1,0 +1,147 @@
+{
+  "id": "groundwire",
+  "realm": "groundwire",
+  "enabled": true,
+  "sslRequired": "none",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": false,
+  "accessTokenLifespan": 36000,
+  "ssoSessionIdleTimeout": 36000,
+  "roles": {
+    "realm": [
+      {
+        "name": "groundwire-admin",
+        "description": "Register agents and operate the box"
+      },
+      {
+        "name": "groundwire-operator",
+        "description": "Approve and reject held routes"
+      }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "groundwire-api",
+      "name": "Groundwire API",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "protocol": "openid-connect"
+    },
+    {
+      "clientId": "groundwire-dashboard",
+      "name": "Groundwire signal box",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "rootUrl": "http://localhost:4200",
+      "baseUrl": "/",
+      "redirectUris": [
+        "http://localhost:4200/*",
+        "http://127.0.0.1:4200/*",
+        "http://localhost:4201/*"
+      ],
+      "webOrigins": [
+        "http://localhost:4200",
+        "http://127.0.0.1:4200",
+        "http://localhost:4201",
+        "+"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "http://localhost:4200/*##http://127.0.0.1:4200/*"
+      },
+      "protocol": "openid-connect",
+      "protocolMappers": [
+        {
+          "name": "tenant-id",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.attribute": "tenant_id",
+            "claim.name": "tenant_id",
+            "jsonType.label": "String",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        },
+        {
+          "name": "audience-api",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "groundwire-api",
+            "id.token.claim": "false",
+            "access.token.claim": "true"
+          }
+        }
+      ]
+    }
+  ],
+  "users": [
+    {
+      "username": "admin",
+      "enabled": true,
+      "email": "admin@groundwire.local",
+      "emailVerified": true,
+      "firstName": "Box",
+      "lastName": "Admin",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "admin",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["groundwire-admin"],
+      "attributes": {
+        "tenant_id": ["00000000-0000-0000-0000-000000000001"]
+      }
+    },
+    {
+      "username": "operator",
+      "enabled": true,
+      "email": "operator@groundwire.local",
+      "emailVerified": true,
+      "firstName": "Box",
+      "lastName": "Operator",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "operator",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["groundwire-operator"],
+      "attributes": {
+        "tenant_id": ["00000000-0000-0000-0000-000000000001"]
+      }
+    },
+    {
+      "username": "operator-b",
+      "enabled": true,
+      "email": "operator-b@groundwire.local",
+      "emailVerified": true,
+      "firstName": "Tenant",
+      "lastName": "B",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "operator",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["groundwire-operator"],
+      "attributes": {
+        "tenant_id": ["00000000-0000-0000-0000-000000000002"]
+      }
+    }
+  ]
+}

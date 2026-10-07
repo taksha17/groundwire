@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
-import { Agent, Run, RunGraph } from './models';
+import { Agent, AuditRecord, Identity, Metrics, Run, RunGraph } from './models';
 
 @Injectable({ providedIn: 'root' })
 export class ApiService {
@@ -55,5 +55,50 @@ export class ApiService {
         actor: 'signal-box',
       }),
     );
+  }
+
+  metrics(): Promise<Metrics> {
+    return firstValueFrom(this.http.get<Metrics>('/v1/metrics'));
+  }
+
+  me(): Promise<Identity> {
+    return firstValueFrom(this.http.get<Identity>('/v1/me'));
+  }
+
+  listAudit(params?: {
+    agent_id?: string;
+    outcome?: string;
+    since?: string;
+    until?: string;
+  }): Promise<AuditRecord[]> {
+    const query: Record<string, string> = {};
+    if (params?.agent_id) {
+      query['agent_id'] = params.agent_id;
+    }
+    if (params?.outcome) {
+      query['outcome'] = params.outcome;
+    }
+    if (params?.since) {
+      query['since'] = params.since;
+    }
+    if (params?.until) {
+      query['until'] = params.until;
+    }
+    return firstValueFrom(this.http.get<AuditRecord[]>('/v1/audit', { params: query }));
+  }
+
+  runAudit(runId: string): Promise<AuditRecord[]> {
+    return firstValueFrom(this.http.get<AuditRecord[]>(`/v1/runs/${runId}/audit`));
+  }
+
+  auditExportUrl(format: 'json' | 'csv', params?: { agent_id?: string; outcome?: string }): string {
+    const search = new URLSearchParams({ format });
+    if (params?.agent_id) {
+      search.set('agent_id', params.agent_id);
+    }
+    if (params?.outcome) {
+      search.set('outcome', params.outcome);
+    }
+    return `/v1/audit?${search.toString()}`;
   }
 }

@@ -1,10 +1,13 @@
+import re
 from uuid import UUID
 
+import httpx
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from temporalio import activity
 
 from groundwire.models import AuditRecord, Run
-from groundwire.temporal.payloads import PlanResult, RunWorkflowInput, ToolCall
+from groundwire.settings import get_settings
+from groundwire.temporal.payloads import PlanResult, RouteDecision, RunWorkflowInput, ToolCall
 
 _session_factory: async_sessionmaker[AsyncSession] | None = None
 
@@ -81,3 +84,60 @@ async def plan_run(input: RunWorkflowInput) -> PlanResult:
 @activity.defn
 async def execute_tool(tool: str, params: dict) -> dict:
     return {"tool": tool, "params": params, "result": "executed"}
+
+
+_HEAVY = ("analyze", "reason", "plan", "summarize", "rag", "research", "write a long")
+
+
+def fallback_route(task: str, prompt: str) -> RouteDecision:
+    tokens = max(32, len(prompt) // 4)
+    blob = f"{task} {prompt}".lower()
+    large = tokens > 400 or any(re.search(rf"\b{re.escape(word)}\b", blob) for word in _HEAVY)
+    out_tokens = min(200, tokens // 2)
+    if large:
+        cost = (tokens * 2.50 + out_tokens * 10.0) / 1_000_000
+        return RouteDecision(
+            model="groundwire-large",
+            provider="groundwire",
+            reason="long or reasoning-shaped prompt; send it to the larger model",
+            estimated_cost_usd=round(cost, 6),
+            input_tokens=tokens,
+            output_tokens=out_tokens,
+            routed=False,
+        )
+    cost = (tokens * 0.15 + out_tokens * 0.60) / 1_000_000
+    return RouteDecision(
+        model="groundwire-small",
+        provider="groundwire",
+        reason="short deterministic tool call; keep it on the small model",
+        estimated_cost_usd=round(cost, 6),
+        input_tokens=tokens,
+        output_tokens=out_tokens,
+        routed=False,
+    )
+
+
+@activity.defn
+async def route_model(task: str, prompt: str) -> RouteDecision:
+    settings = get_settings()
+    if not settings.router_url:
+        return fallback_route(task, prompt)
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.post(
+                f"{settings.router_url.rstrip('/')}/v1/route",
+                json={"task": task, "prompt": prompt},
+            )
+            response.raise_for_status()
+            body = response.json()
+    except httpx.HTTPError:
+        return fallback_route(task, prompt)
+    return RouteDecision(
+        model=str(body.get("model") or "groundwire-small"),
+        provider=str(body.get("provider") or "groundwire"),
+        reason=str(body.get("reason") or ""),
+        estimated_cost_usd=float(body.get("estimated_cost_usd") or 0),
+        input_tokens=int(body.get("input_tokens") or 0),
+        output_tokens=int(body.get("output_tokens") or 0),
+        routed=bool(body.get("routed")),
+    )

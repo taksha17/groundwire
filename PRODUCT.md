@@ -8,19 +8,19 @@ web
 
 ## Stack
 
-Angular dashboard (PRD-pinned) talking to the existing FastAPI control plane. D3.js renders a run’s execution DAG. Docker Compose self-host. Auth is out of scope until v0.3.
+Angular dashboard (PRD-pinned) talking to the FastAPI control plane. D3.js renders a run’s execution DAG. Keycloak OIDC on API and dashboard. Docker Compose self-host.
 
 ## Users
 
 Primary: an AI/ML engineer running their own agents. They watch live runs, open one run, and approve or reject a gated tool call.
 
-Also served, not primary for v0.2: platform/infra engineers on a shared control plane; compliance reviewers (full audit query UI is v0.3).
+Also served: platform/infra engineers on a shared control plane; compliance reviewers reading the occurrence book.
 
 ## Product Purpose
 
 Groundwire is the durable execution and governance layer under agent frameworks. It does not write agent logic. It guarantees a run survives crashes, can pause indefinitely for a human decision, and leaves a paper trail.
 
-v0.2 success: from the dashboard, an operator can see live runs, inspect a run as a DAG, and approve or reject a pending action — including after a worker restart.
+v0.4 success: the same signal box, now behind Keycloak, with a Go model-router on the run path. Tenant-scoped data. Operator cannot register agents. Approvals are tied to the signed-in identity. The occurrence book is queryable and exportable. Cost / run is no longer dark once a routed run exists.
 
 ## Positioning
 
@@ -28,12 +28,12 @@ Durable workflow execution plus first-class human approval plus an agent-shaped 
 
 ## Operating Context
 
-The operator keeps a live board up while agents run, and also comes in from an approval ping during an incident: decide, leave. v0.1 already proves a run can sit in `awaiting_approval` across worker restarts; the dashboard is how a human finds that pause and acts. No SSO in v0.2. Demo agent is a deterministic `send_email` plan.
+The operator keeps a live board up while agents run, and also comes in from an approval ping during an incident: decide, leave. Demo users: `admin` / `admin` and `operator` / `operator` in the imported Keycloak realm. Demo agent is a deterministic `send_email` plan.
 
 ## Capabilities and Constraints
 
-- v0.2 surfaces: live run list with status filters; run detail with D3 execution DAG; approval inbox with approve/reject (edit-and-approve exists in the API).
-- Not in v0.2: Keycloak/OIDC, metrics charts, Go model-router, Slack/email notifications, visual workflow builder.
+- v0.4 surfaces: live run list; DAG with a router node; approval levers; occurrence book; analog instrument gauges including cost / run; Keycloak sign-in; Go model-router. Set a route is always on the plate.
+- Not yet: Slack/email notifications, visual workflow builder, LangChain/CrewAI examples.
 - Status vocabulary is fixed: `planning`, `awaiting_approval`, `executing`, `completed`, `failed`, `rejected`.
 - License Apache 2.0; no Highcharts.
 

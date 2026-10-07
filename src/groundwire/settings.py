@@ -13,6 +13,12 @@ class Settings(BaseSettings):
     temporal_namespace: str = "default"
     temporal_task_queue: str = "groundwire-agent-runs"
     default_tenant_id: UUID = DEFAULT_TENANT_ID
+    auth_enabled: bool = False
+    oidc_issuer: str = "http://localhost:8081/realms/groundwire"
+    oidc_jwks_url: str = ""
+    oidc_audience: str = "groundwire-api"
+    oidc_public_key: str = ""
+    router_url: str = ""
 
 
 def get_settings() -> Settings:

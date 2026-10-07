@@ -24,12 +24,12 @@ async def start_run(
     payload: dict,
     tenant_id: UUID | None = None,
 ) -> Run:
-    agent = await get_agent(session, agent_id)
+    resolved_tenant = tenant_id or DEFAULT_TENANT_ID
+    agent = await get_agent(session, agent_id, tenant_id=resolved_tenant)
     if agent is None:
         raise AgentNotFoundError(str(agent_id))
 
     run_id = uuid4()
-    resolved_tenant = tenant_id or DEFAULT_TENANT_ID
     run = Run(
         id=run_id,
         tenant_id=resolved_tenant,
@@ -76,15 +76,28 @@ def to_run_read(run: Run) -> "RunRead":
     )
 
 
-async def get_run(session: AsyncSession, run_id: UUID) -> Run | None:
-    result = await session.execute(
-        select(Run).options(selectinload(Run.agent_definition)).where(Run.id == run_id)
-    )
+async def get_run(
+    session: AsyncSession,
+    run_id: UUID,
+    *,
+    tenant_id: UUID | None = None,
+) -> Run | None:
+    stmt = select(Run).options(selectinload(Run.agent_definition)).where(Run.id == run_id)
+    if tenant_id is not None:
+        stmt = stmt.where(Run.tenant_id == tenant_id)
+    result = await session.execute(stmt)
     return result.scalar_one_or_none()
 
 
-async def list_runs(session: AsyncSession, *, status: str | None = None) -> list[Run]:
-    stmt = select(Run).options(selectinload(Run.agent_definition)).order_by(Run.created_at.desc())
+async def list_runs(
+    session: AsyncSession, *, tenant_id: UUID, status: str | None = None
+) -> list[Run]:
+    stmt = (
+        select(Run)
+        .options(selectinload(Run.agent_definition))
+        .where(Run.tenant_id == tenant_id)
+        .order_by(Run.created_at.desc())
+    )
     if status is not None:
         stmt = stmt.where(Run.status == status)
     result = await session.execute(stmt)

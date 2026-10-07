@@ -45,6 +45,19 @@ async def plan_stub(input: RunWorkflowInput) -> PlanResult:
     )
 
 
+@activity.defn(name="route_model")
+async def route_stub(task: str, prompt: str):
+    from groundwire.temporal.payloads import RouteDecision
+
+    return RouteDecision(
+        model="groundwire-small",
+        provider="groundwire",
+        reason="test",
+        estimated_cost_usd=0.0001,
+        routed=True,
+    )
+
+
 @activity.defn(name="execute_tool")
 async def execute_stub(tool: str, params: dict) -> dict:
     return {"tool": tool, "params": params, "result": "executed"}
@@ -55,7 +68,7 @@ def _worker(client):
         client,
         task_queue=TASK_QUEUE,
         workflows=[AgentRunWorkflow],
-        activities=[persist_stub, audit_stub, plan_stub, execute_stub],
+        activities=[persist_stub, audit_stub, plan_stub, route_stub, execute_stub],
     )
 
 

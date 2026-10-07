@@ -1,22 +1,38 @@
 <div class="box">
   <header class="plate">
-    <p class="plate-name">Groundwire</p>
-    <p class="plate-frame">Signal box {{ selected()?.agent_name || 'unset' }}</p>
+    <div class="identity">
+      <p class="plate-name">Groundwire</p>
+      <p class="plate-frame">{{ selected()?.agent_name || 'signal box unset' }}</p>
+    </div>
     <nav class="filters" aria-label="Route frame">
       <button type="button" [class.on]="filter() === 'all'" (click)="setFilter('all')">All routes</button>
       <button type="button" [class.on]="filter() === 'live'" (click)="setFilter('live')">Live</button>
       <button type="button" [class.on]="filter() === 'held'" (click)="setFilter('held')">Held</button>
+      <button type="button" [class.on]="filter() === 'register'" (click)="setFilter('register')">Register</button>
+      <button type="button" [class.on]="filter() === 'instruments'" (click)="setFilter('instruments')">
+        Instruments
+      </button>
     </nav>
+    <div class="signaller">
+      <button type="button" class="lever" [disabled]="busy() || needsAuth()" (click)="setRoute()">
+        {{ busy() ? 'Setting…' : 'Set a route' }}
+      </button>
+      @if (needsAuth()) {
+        <button type="button" class="lever" (click)="login()">Sign in</button>
+      } @else {
+        <span class="signaller-name">{{ username() || 'anonymous' }}</span>
+        @if (auth.signedIn()) {
+          <button type="button" class="ghost" (click)="logout()">Sign out</button>
+        }
+      }
+    </div>
   </header>
 
   <aside class="strip" aria-label="Live routes">
     @if (visibleRuns().length === 0) {
       <div class="empty">
         <p>No routes on the frame.</p>
-        <p>Set the demo agent and throw a train onto the diagram. It will sit at danger until you pull the lever.</p>
-        <button type="button" class="lever" [disabled]="busy()" (click)="setRoute()">
-          {{ busy() ? 'Setting…' : 'Set a route' }}
-        </button>
+        <p>Throw a train onto the diagram. It sits at danger until you pull the lever.</p>
       </div>
     } @else {
       <ul>
@@ -45,13 +61,76 @@
     @if (error()) {
       <p class="fault" role="alert">{{ error() }}</p>
     }
-    <app-diagram [graph]="graph()" [label]="'Route ' + (selected()?.id || '')" (decide)="decide($event)" />
-    @if (selected()?.status === 'awaiting_approval' && selected()?.pending_action; as action) {
-      <section class="hold">
-        <p class="hold-tool">{{ action.tool }} held at danger</p>
-        <p class="hold-why">{{ action.rationale }}</p>
-        <pre class="hold-params">{{ action.params | json }}</pre>
+
+    @if (filter() === 'register') {
+      <section class="register" aria-label="Occurrence book">
+        <header class="register-head">
+          <h2>Occurrence book</h2>
+          <label>
+            Agent
+            <select [value]="auditAgent()" (change)="auditAgent.set($any($event.target).value); loadRegister()">
+              <option value="">All</option>
+              @for (agent of agents(); track agent.id) {
+                <option [value]="agent.id">{{ agent.name }}</option>
+              }
+            </select>
+          </label>
+          <label>
+            Outcome
+            <select [value]="auditOutcome()" (change)="auditOutcome.set($any($event.target).value); loadRegister()">
+              <option value="">All</option>
+              <option value="completed">completed</option>
+              <option value="rejected">rejected</option>
+              <option value="failed">failed</option>
+              <option value="awaiting_approval">awaiting approval</option>
+            </select>
+          </label>
+          <button type="button" class="ghost" (click)="exportRegister('json')">Export JSON</button>
+          <button type="button" class="ghost" (click)="exportRegister('csv')">Export CSV</button>
+        </header>
+        <ol class="ledger">
+          @for (row of register(); track row.id) {
+            <li>
+              <time>{{ row.created_at | date: 'HH:mm:ss' }}</time>
+              <span class="ledger-event">{{ row.event_type.replace('_', ' ') }}</span>
+              <span class="ledger-actor">{{ row.actor }}</span>
+              <span class="ledger-out">{{ row.outcome }}</span>
+            </li>
+          } @empty {
+            <li class="ledger-empty">No entries in the book.</li>
+          }
+        </ol>
       </section>
+    } @else if (filter() === 'instruments') {
+      <app-instruments [metrics]="metrics()" />
+    } @else {
+      <app-diagram [graph]="graph()" [label]="'Route ' + (selected()?.id || '')" (decide)="decide($event)" />
+      @if (selected()?.status === 'awaiting_approval' && selected()?.pending_action; as action) {
+        <section class="hold">
+          <p class="hold-tool">{{ action.tool }} held at danger</p>
+          <p class="hold-why">{{ action.rationale }}</p>
+          @if (action.model) {
+            <p class="hold-route">{{ action.model }} · ${{ action.estimated_cost_usd ?? 0 }}</p>
+          }
+          <pre class="hold-params">{{ action.params | json }}</pre>
+        </section>
+      }
+      @if (timeline().length) {
+        <section class="register compact" aria-label="Run timeline">
+          <header class="register-head">
+            <h2>This route</h2>
+          </header>
+          <ol class="ledger">
+            @for (row of timeline(); track row.id) {
+              <li>
+                <time>{{ row.created_at | date: 'HH:mm:ss' }}</time>
+                <span class="ledger-event">{{ row.event_type.replace('_', ' ') }}</span>
+                <span class="ledger-actor">{{ row.actor }}</span>
+              </li>
+            }
+          </ol>
+        </section>
+      }
     }
   </main>
 </div>

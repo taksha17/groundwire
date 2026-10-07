@@ -63,17 +63,40 @@ def build_run_graph(
 
     nodes = [
         GraphNode(id="plan", type="planning", name="Plan", status=plan_status),
-        GraphNode(
-            id="approval",
-            type="approval_gate",
-            name="Approval",
-            status=approval_status,
-            detail=approval_detail,
-        ),
-        GraphNode(id=tool_name, type="tool_call", name=tool_name, status=tool_status),
     ]
-    edges = [
-        GraphEdge(source="plan", target="approval"),
-        GraphEdge(source="approval", target=tool_name),
-    ]
+    if "model_routed" in events:
+        model = str((pending_action or {}).get("model") or "Router")
+        nodes.append(
+            GraphNode(
+                id="route",
+                type="model_route",
+                name=model,
+                status="completed",
+                detail={
+                    "model": (pending_action or {}).get("model"),
+                    "estimated_cost_usd": (pending_action or {}).get("estimated_cost_usd"),
+                }
+                if pending_action
+                else None,
+            )
+        )
+    nodes.extend(
+        [
+            GraphNode(
+                id="approval",
+                type="approval_gate",
+                name="Approval",
+                status=approval_status,
+                detail=approval_detail,
+            ),
+            GraphNode(id=tool_name, type="tool_call", name=tool_name, status=tool_status),
+        ]
+    )
+    edges: list[GraphEdge] = []
+    previous = "plan"
+    if "model_routed" in events:
+        edges.append(GraphEdge(source=previous, target="route"))
+        previous = "route"
+    edges.append(GraphEdge(source=previous, target="approval"))
+    edges.append(GraphEdge(source="approval", target=tool_name))
     return nodes, edges

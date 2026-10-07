@@ -20,6 +20,12 @@ dashboard/.angular/
 .env
 *.log
 
+# Local data (must live on New Volume, never /)
+.data/
+
+# Host-built Go router binary (copied into the alpine image)
+router/groundwire-router
+
 # Tooling / agent state (not shipped)
 .superpowers/
 .impeccable/

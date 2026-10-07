@@ -51,6 +51,19 @@ async def plan_stub(input: RunWorkflowInput) -> PlanResult:
     )
 
 
+@activity.defn(name="route_model")
+async def route_stub(task: str, prompt: str):
+    from groundwire.temporal.payloads import RouteDecision
+
+    return RouteDecision(
+        model="groundwire-small",
+        provider="groundwire",
+        reason="test",
+        estimated_cost_usd=0.0001,
+        routed=True,
+    )
+
+
 @activity.defn(name="execute_tool")
 async def execute_stub(tool: str, params: dict) -> dict:
     executed.append({"tool": tool, "params": params})
@@ -73,7 +86,7 @@ async def test_workflow_pauses_until_approval_then_executes():
             env.client,
             task_queue=TASK_QUEUE,
             workflows=[AgentRunWorkflow],
-            activities=[persist_stub, audit_stub, plan_stub, execute_stub],
+            activities=[persist_stub, audit_stub, plan_stub, route_stub, execute_stub],
         ):
             handle = await env.client.start_workflow(
                 AgentRunWorkflow.run,
@@ -83,6 +96,8 @@ async def test_workflow_pauses_until_approval_then_executes():
                 execution_timeout=timedelta(seconds=30),
             )
             await _wait_status(handle, "awaiting_approval")
+            pending = await handle.query(AgentRunWorkflow.pending_action)
+            assert pending["model"] == "groundwire-small"
             assert executed == []
             await handle.signal(
                 AgentRunWorkflow.approval_decision,
@@ -106,7 +121,7 @@ async def test_workflow_reject_does_not_execute_tool():
             env.client,
             task_queue=TASK_QUEUE,
             workflows=[AgentRunWorkflow],
-            activities=[persist_stub, audit_stub, plan_stub, execute_stub],
+            activities=[persist_stub, audit_stub, plan_stub, route_stub, execute_stub],
         ):
             handle = await env.client.start_workflow(
                 AgentRunWorkflow.run,
@@ -134,7 +149,7 @@ async def test_workflow_edit_and_approve_uses_edited_params():
             env.client,
             task_queue=TASK_QUEUE,
             workflows=[AgentRunWorkflow],
-            activities=[persist_stub, audit_stub, plan_stub, execute_stub],
+            activities=[persist_stub, audit_stub, plan_stub, route_stub, execute_stub],
         ):
             handle = await env.client.start_workflow(
                 AgentRunWorkflow.run,

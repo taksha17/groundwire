@@ -18,9 +18,14 @@ def make_session_factory(engine: AsyncEngine) -> async_sessionmaker[AsyncSession
 
 async def create_tables(engine: AsyncEngine) -> None:
     from groundwire import models as _models  # noqa: F401
+    from groundwire.services.policies import seed_default_policies
+    from groundwire.settings import DEFAULT_TENANT_ID
 
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+    factory = make_session_factory(engine)
+    async with factory() as session:
+        await seed_default_policies(session, DEFAULT_TENANT_ID)
 
 
 async def session_from_factory(

@@ -15,6 +15,8 @@ export interface PendingAction {
   tool: string;
   params: Record<string, unknown>;
   rationale: string;
+  model?: string;
+  estimated_cost_usd?: number;
 }
 
 export interface GraphNode {
@@ -40,4 +42,34 @@ export interface Agent {
   name: string;
   allowed_tools: string[];
   version: number;
+}
+
+export interface Identity {
+  subject: string;
+  username: string;
+  tenant_id: string;
+  roles: string[];
+}
+
+export interface Metrics {
+  runs: number;
+  completed: number;
+  rejected: number;
+  failed: number;
+  success_rate: number;
+  avg_duration_seconds: number;
+  avg_approval_seconds: number;
+  cost_per_run: number;
+}
+
+export interface AuditRecord {
+  id: string;
+  tenant_id: string;
+  run_id: string;
+  agent_id: string | null;
+  event_type: string;
+  actor: string;
+  payload: Record<string, unknown>;
+  created_at: string | null;
+  outcome: string | null;
 }

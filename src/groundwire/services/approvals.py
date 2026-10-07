@@ -25,8 +25,9 @@ async def decide_approval(
     decision: str,
     edited_params: dict | None = None,
     actor: str = "anonymous",
+    tenant_id: UUID | None = None,
 ) -> Run:
-    run = await get_run(session, run_id)
+    run = await get_run(session, run_id, tenant_id=tenant_id)
     if run is None:
         raise RunNotFoundError(str(run_id))
     if run.status != RunStatus.AWAITING_APPROVAL:

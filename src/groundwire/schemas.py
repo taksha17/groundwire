@@ -67,3 +67,33 @@ class ApprovalCreate(BaseModel):
     decision: str = Field(pattern="^(approve|reject|edit)$")
     edited_params: dict | None = None
     actor: str = "anonymous"
+
+
+class MetricsRead(BaseModel):
+    runs: int
+    completed: int
+    rejected: int
+    failed: int
+    success_rate: float
+    avg_duration_seconds: float
+    avg_approval_seconds: float
+    cost_per_run: float
+
+
+class IdentityRead(BaseModel):
+    subject: str
+    username: str
+    tenant_id: UUID
+    roles: list[str]
+
+
+class AuditRecordRead(BaseModel):
+    id: UUID
+    tenant_id: UUID
+    run_id: UUID
+    agent_id: UUID | None = None
+    event_type: str
+    actor: str
+    payload: dict
+    created_at: datetime | None = None
+    outcome: str | None = None
