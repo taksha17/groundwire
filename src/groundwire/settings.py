@@ -21,6 +21,9 @@ class Settings(BaseSettings):
     router_url: str = ""
     approval_webhook_url: str = ""
     approval_webhook_secret: str = ""
+    approval_timeout_hours: float = 72
+    tool_executor_url: str = ""
+    tool_executor_secret: str = ""
     dashboard_public_url: str = "http://localhost:4200"
 
 

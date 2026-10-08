@@ -165,7 +165,7 @@ footer a:hover{color:var(--text)}
       <li><a href="#compare">Compare</a></li>
       <li><a href="https://github.com/taksha17/groundwire" target="_blank" rel="noopener">GitHub ↗</a></li>
     </ul>
-    <a class="btn primary sm" href="https://github.com/taksha17/groundwire" target="_blank" rel="noopener">Star on GitHub</a>
+    <a class="btn primary sm" href="http://localhost:4200">Open the signal box</a>
   </div>
 </nav>
 
@@ -173,12 +173,12 @@ footer a:hover{color:var(--text)}
   <div class="wrap">
     <span class="pill"><b>●</b> open-source control plane for AI agents · v1.0</span>
     <h1>Your agent decides <em>what</em>.<br>Groundwire makes sure <span class="grad">it actually happens</span>.</h1>
-    <p class="sub">Durable execution that survives crashes. Approval gates that hold for minutes — or weeks. An audit trail for every action your agent takes.</p>
+    <p class="sub">Durable execution that survives crashes. Approval gates that hold for minutes — or weeks. Your framework drafts; Groundwire holds the gated send, pings you, and writes the paper trail.</p>
     <div class="cta">
-      <a class="btn primary" href="https://github.com/taksha17/groundwire" target="_blank" rel="noopener">Get started — it's free</a>
+      <a class="btn primary" href="http://localhost:4200">Open the signal box</a>
       <a class="btn ghost" href="#how">See how it works</a>
     </div>
-    <div class="below">$ docker compose up &nbsp;·&nbsp; self-host the whole stack for $0</div>
+    <div class="below">$ docker compose up &nbsp;·&nbsp; this page :4300 &nbsp;·&nbsp; box :4200</div>
     <div class="signals">
       <figure class="sig"><span class="bezel"><span class="bulb"></span></span><figcaption>agent executing</figcaption></figure>
       <figure class="sig"><span class="bezel"><span class="bulb"></span></span><figcaption>held for approval</figcaption></figure>
@@ -208,38 +208,26 @@ footer a:hover{color:var(--text)}
     <h2>A control plane under your agent framework</h2>
     <div class="split">
       <div>
-        <p class="lead">Keep your LangChain, LangGraph, CrewAI, or custom code. Groundwire registers the contract — name, tools, approval policy — and runs it as a <b>durable Temporal workflow</b>.</p>
+        <p class="lead">Keep your LangChain, LangGraph, CrewAI, or custom code. <span class="mono">GroundwireClient</span> registers the contract — name, tools, approval policy — and runs it as a <b>durable Temporal workflow</b>. Keycloak signs the human. A Go router picks the model and lights cost / run.</p>
         <ul class="checks">
           <li>Crash mid-run? The run resumes exactly where it stopped.</li>
           <li>Gated step? The workflow durably pauses on a signal — indefinitely.</li>
-          <li>Every step transition, decision, and identity is recorded.</li>
+          <li>Held at danger? Optional webhook ping so you can leave the box.</li>
+          <li>Every step, decision, and identity is recorded.</li>
           <li>Approve, reject, or <b>edit-and-approve</b> the agent's proposed action.</li>
         </ul>
       </div>
       <div class="window">
         <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="t">terminal</span></div>
-<pre><span class="cm"># sign in via Keycloak (OIDC) → bearer token</span>
-<span class="kw">curl</span> -X POST localhost:8081/realms/groundwire/protocol/openid-connect/token \
-  -d <span class="st">'{"username":"admin","password":"admin",...}'</span>
+<pre><span class="cm"># LangChain drafts; Groundwire holds send_email</span>
+<span class="kw">GROUNDWIRE_API_URL</span>=http://localhost:8000 \
+<span class="kw">GROUNDWIRE_USERNAME</span>=admin <span class="kw">GROUNDWIRE_PASSWORD</span>=admin \
+python examples/langchain/ops_email.py --incident <span class="st">"api latency"</span>
 
-<span class="cm"># register an agent — the email tool needs a human</span>
-<span class="kw">curl</span> -X POST localhost:8000/v1/agents \
-  -d <span class="st">'{"name":"ops-agent",
-       "allowed_tools":["send_email"],
-       "approval_policy":
-         {"require_approval_for":["send_email"]}}'</span>
-
-<span class="cm"># start a run — it plans, executes, then…</span>
-<span class="kw">curl</span> -X POST localhost:8000/v1/runs \
-  -d <span class="st">'{"agent_id":"agt_01","payload":{...}}'</span>
-
-<span class="cm"># …durably pauses before send_email</span>
-<span class="fn">→</span> run <span class="hl">awaiting_approval</span> <span class="cm"># and now it waits. For you.</span>
-
-<span class="cm"># you decide — and it's on the record</span>
-<span class="kw">curl</span> -X POST .../runs/<span class="hl">RUN_ID</span>/approvals \
-  -d <span class="st">'{"decision":"approve","actor":"you"}'</span></pre>
-        <div class="out"><span>●</span> run resumed → step executed → audit record written</div>
+<span class="fn">→</span> run <span class="hl">awaiting_approval</span> <span class="cm"># lamp goes red</span>
+<span class="cm"># optional POST to APPROVAL_WEBHOOK_URL</span>
+approve in the signal box: http://localhost:4200</pre>
+        <div class="out"><span>●</span> ping 204 · held until you pull the lever · audit written</div>
       </div>
     </div>
   </div>
@@ -256,7 +244,7 @@ footer a:hover{color:var(--text)}
         <div class="row red"><span class="lamp" style="background:var(--red);box-shadow:0 0 10px var(--red)"></span> run_9c41 · ops-agent <span class="st3">held — awaiting approval</span> <span class="lever">⇩ approve</span> <span class="lever">✕ reject</span></div>
         <div class="row green"><span class="lamp" style="background:var(--green);box-shadow:0 0 10px var(--green)"></span> run_5b08 · report-agent <span class="st3">completed</span></div>
       </div>
-      <div class="cap">— the signal box · live run strip, D3 execution DAG, levers on the held node —</div>
+      <div class="cap">— the signal box · live run strip, D3 DAG, levers, occurrence book, cost / run —</div>
     </div>
   </div>
 </section>
@@ -267,7 +255,7 @@ footer a:hover{color:var(--text)}
     <h2>The missing piece of the agent stack</h2>
     <p class="lead">Agent frameworks handle logic; workflow engines handle durability. Nobody built the layer that gives agents both — plus governance. That's Groundwire.</p>
     <table>
-      <thead><tr><th></th><th>Agent logic</th><th class="gwcol">Groundwire</th><th>LangGraph / CrewAI</th><th>Temporal / n8n</th></tr></thead>
+      <thead><tr><th></th><th class="gwcol">Groundwire</th><th>LangGraph / CrewAI</th><th>Temporal / n8n</th></tr></thead>
       <tbody>
         <tr><td>Durable, resumable runs</td><td class="gwcol"><span class="y yes">yes</span></td><td><span class="n">partial</span></td><td><span class="y yes">yes</span></td></tr>
         <tr><td>Signal-backed approval gates</td><td class="gwcol"><span class="y yes">yes</span></td><td><span class="n">bolted on</span></td><td><span class="h half">hand-rolled</span></td></tr>
@@ -283,10 +271,10 @@ footer a:hover{color:var(--text)}
   <div class="wrap">
     <span class="kicker">Get started</span>
     <h2>One command. Stateful stack included.</h2>
-    <p class="sub">Postgres, Temporal, the FastAPI control plane, the durable worker, and the signal-box dashboard — all up in one command.</p>
+    <p class="sub">Postgres, Keycloak, Temporal, the Go router, the control plane, the durable worker, the signal box, and this page — all up in one command. Sign in as admin / admin.</p>
     <div class="cta">
-      <a class="btn primary" href="https://github.com/taksha17/groundwire" target="_blank" rel="noopener">Clone the repo</a>
-      <a class="btn ghost" href="https://github.com/taksha17/groundwire/blob/main/README.md" target="_blank" rel="noopener">Read the docs</a>
+      <a class="btn primary" href="http://localhost:4200">Open the signal box</a>
+      <a class="btn ghost" href="https://github.com/taksha17/groundwire" target="_blank" rel="noopener">Clone the repo</a>
     </div>
   </div>
 </section>
@@ -294,7 +282,7 @@ footer a:hover{color:var(--text)}
 <footer>
   <div class="wrap">
     <span>Groundwire · Apache 2.0 · built by <a href="https://github.com/taksha17" target="_blank" rel="noopener">Taksha Thosani</a></span>
-    <span class="mono">durable execution · approval gates · audit trail</span>
+    <span class="mono">durable execution · approval gates · audit trail · webhook ping</span>
   </div>
 </footer>
 

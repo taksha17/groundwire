@@ -83,7 +83,24 @@ async def plan_run(input: RunWorkflowInput) -> PlanResult:
 
 @activity.defn
 async def execute_tool(tool: str, params: dict) -> dict:
-    return {"tool": tool, "params": params, "result": "executed"}
+    settings = get_settings()
+    url = settings.tool_executor_url.strip()
+    body = {"event": "execute_tool", "tool": tool, "params": params}
+    if not url:
+        return {"tool": tool, "params": params, "result": "executed", "delivered": False}
+    headers = {"Content-Type": "application/json", "User-Agent": "groundwire-worker/1.0"}
+    if settings.tool_executor_secret:
+        headers["Authorization"] = f"Bearer {settings.tool_executor_secret}"
+    async with httpx.AsyncClient(timeout=20.0) as client:
+        response = await client.post(url, json=body, headers=headers)
+        response.raise_for_status()
+    return {
+        "tool": tool,
+        "params": params,
+        "result": "executed",
+        "delivered": True,
+        "status_code": response.status_code,
+    }
 
 
 _HEAVY = ("analyze", "reason", "plan", "summarize", "rag", "research", "write a long")

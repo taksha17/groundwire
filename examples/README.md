@@ -18,9 +18,10 @@ export GROUNDWIRE_PASSWORD=admin
 
 python examples/langchain/ops_email.py --incident "api latency"
 python examples/crewai/ops_email.py --incident "api latency"
+python examples/sre_incident_storm.py --count 48
 ```
 
-Each process prints a run id and the dashboard URL. Open the box, wait for the red lamp, pull **Approve**. To get a ping instead of watching the strip, run `python examples/webhook_sink.py` and set `APPROVAL_WEBHOOK_URL=http://host.docker.internal:8091` on the worker.
+Each process prints a run id and the dashboard URL. Open the box, wait for the red lamp, pull **Approve**. To get a ping instead of watching the strip, run `python examples/webhook_sink.py` and set `APPROVAL_WEBHOOK_URL=http://host.docker.internal:8091` on the worker. To send from the gate itself, run `python examples/mailer_sink.py` and set `TOOL_EXECUTOR_URL=http://host.docker.internal:8092`. Reject and the 72-hour timeout never hit that process.
 
 `GROUNDWIRE_TOKEN` can replace the username/password pair if you already have a bearer token. Do not commit tokens.
 

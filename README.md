@@ -50,7 +50,7 @@ cd groundwire
 docker compose up --build
 ```
 
-One command brings up the whole stateful backend — **Postgres, Keycloak, Temporal (+ UI), the Go model-router, the FastAPI control plane, the durable worker, and the dashboard**. First boot takes a minute while Temporal auto-setup and Keycloak import the demo realm.
+One command brings up the whole stateful backend — **Postgres, Keycloak, Temporal (+ UI), the Go model-router, the FastAPI control plane, the durable worker, the dashboard, and the public page**. First boot takes a minute while Temporal auto-setup and Keycloak import the demo realm.
 
 Host-build the router binary first (keeps a `golang` image off `/`):
 
@@ -63,15 +63,16 @@ The dashboard image copies a host `ng build` so a Node image never lands on `/`.
 
 | Surface | URL |
 |---|---|
+| 🌐 Public page | http://localhost:4300 |
 | 🖥️ Dashboard (signal box) | http://localhost:4200 |
 | 🔌 Control plane API | http://localhost:8000 |
 | 🧠 Model router | http://localhost:8090 |
 | 🪪 Keycloak | http://localhost:8081 (realm `groundwire`) |
 | 🔭 Temporal UI | http://localhost:8088 |
 
-Sign in to the box as **admin / admin** (can register agents) or **operator / operator** (can approve, cannot register). Compose data lives in `./.data` on this volume, not on `/`.
+Sign in to the box as **admin / admin** (can register agents) or **operator / operator** (can approve, cannot register). Those passwords are a first-boot secret. Before anyone else can open the box, change them in the Keycloak admin console at http://localhost:8081 (master user `admin` / `admin`, realm `groundwire`, then Users → Credentials). Published ports bind to `127.0.0.1` only. Compose data lives in `./.data` on this volume, not on `/`.
 
-Ports taken? `GROUNDWIRE_API_PORT=18000 GROUNDWIRE_DASHBOARD_PORT=4201 docker compose up --build`
+Ports taken? `GROUNDWIRE_API_PORT=18000 GROUNDWIRE_DASHBOARD_PORT=4201 GROUNDWIRE_SITE_PORT=4301 docker compose up --build`
 
 ### Try it: a gated agent in 60 seconds
 
@@ -85,6 +86,17 @@ APPROVAL_WEBHOOK_URL=http://host.docker.internal:8091 docker compose up -d worke
 ```
 
 The POST body is JSON: `event`, `run_id`, `agent_name`, `tool`, `pending_action`, `dashboard_url`. Optional `APPROVAL_WEBHOOK_SECRET` is sent as a bearer token.
+
+A held run auto-rejects after `APPROVAL_TIMEOUT_HOURS` (default 72) if nobody pulls the lever. The audit event is `approval_expired`. The mailer is not called.
+
+To make **Approve** the thing that actually sends, point the worker at your mailer. Reject and timeout never call it. With no URL, the worker still records `executed` and sets `delivered` to false.
+
+```bash
+python examples/mailer_sink.py
+TOOL_EXECUTOR_URL=http://host.docker.internal:8092 docker compose up -d worker
+```
+
+The POST body is `event`, `tool`, and `params` (the approved To, subject, and body, including edits). Return non-2xx to fail the run. Optional `TOOL_EXECUTOR_SECRET` is sent as a bearer token. Swap the sink's print for your SMTP or Gmail call.
 
 **From the API** (compose requires a bearer token):
 
@@ -200,8 +212,9 @@ groundwire/
 ├── dashboard/            # Angular "signal box" + nginx-served build
 ├── router/               # Go model-router (POST /v1/route)
 ├── examples/             # LangChain + CrewAI → GroundwireClient
+├── site/                 # navy marketing page (compose :4300)
 ├── tests/                # pytest: registration, runs, approvals, crash-recovery, routing, client
-├── docker-compose.yml    # postgres + keycloak + temporal + router + api + worker + dashboard
+├── docker-compose.yml    # postgres + keycloak + temporal + router + api + worker + dashboard + site
 ├── CONTRIBUTING.md
 ├── docs/architecture.md
 ├── deploy/               # Keycloak realm import + Postgres init (off-root `.data/`)

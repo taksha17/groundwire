@@ -102,8 +102,15 @@ class GroundwireClient:
             json={"agent_id": agent_id, "payload": dict(payload)},
         )
 
+    def list_runs(self, status: str | None = None) -> list[dict]:
+        params = {"status": status} if status else None
+        return self._request("GET", "/v1/runs", params=params)
+
     def get_run(self, run_id: str) -> dict:
         return self._request("GET", f"/v1/runs/{run_id}")
+
+    def run_audit(self, run_id: str) -> list[dict]:
+        return self._request("GET", f"/v1/runs/{run_id}/audit")
 
     def wait_for_status(
         self,

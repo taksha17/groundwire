@@ -86,7 +86,33 @@ class AgentRunWorkflow:
                             start_to_close_timeout=timedelta(seconds=12),
                         )
                         await self._audit(input, "approval_notified", "system", ping)
-                    await workflow.wait_condition(lambda: self._decision is not None)
+                    timed_out = False
+                    if workflow.patched("approval-timeout"):
+                        timeout_seconds = int(input.approval_policy.get("timeout_seconds") or 0)
+                        if timeout_seconds > 0:
+                            try:
+                                await workflow.wait_condition(
+                                    lambda: self._decision is not None,
+                                    timeout=timedelta(seconds=timeout_seconds),
+                                )
+                            except TimeoutError:
+                                timed_out = True
+                        else:
+                            await workflow.wait_condition(lambda: self._decision is not None)
+                    else:
+                        await workflow.wait_condition(lambda: self._decision is not None)
+                    if timed_out:
+                        self._status = "rejected"
+                        await self._persist(
+                            input.run_id, self._status, "approval_gate", self._pending_action
+                        )
+                        await self._audit(
+                            input,
+                            "approval_expired",
+                            "system",
+                            {"tool": call.tool, "timeout_seconds": timeout_seconds},
+                        )
+                        return {"status": "rejected", "reason": "approval_timeout"}
                     decision = self._decision
                     assert decision is not None
                     if decision.decision == "reject":

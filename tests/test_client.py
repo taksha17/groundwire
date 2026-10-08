@@ -38,6 +38,12 @@ class FakePlane:
             }
             self.runs.append(run)
             return httpx.Response(201, json=run)
+        if request.method == "GET" and path == "/v1/runs":
+            status = request.url.params.get("status")
+            runs = [r for r in self.runs if status is None or r["status"] == status]
+            return httpx.Response(200, json=runs)
+        if request.method == "GET" and path.startswith("/v1/runs/") and path.endswith("/audit"):
+            return httpx.Response(200, json=[{"event_type": "run_started"}])
         if request.method == "GET" and path.startswith("/v1/runs/"):
             run_id = path.rsplit("/", 1)[-1]
             for run in self.runs:
@@ -76,6 +82,17 @@ def test_handoff_reuses_named_agent():
     assert len(plane.agents) == 1
     run = start_gated_email(gw, first["id"], canned_outage_email("db failover"))
     assert run["agent_name"] == "langchain-ops-email"
+
+
+def test_client_lists_runs_and_run_audit():
+    plane = FakePlane()
+    gw = _gw(plane)
+    agent = gw.register_agent("sre-incident-assist", ["send_email"], {"require_approval_for": ["send_email"]})
+    run = gw.start_run(agent["id"], canned_outage_email("api latency"))
+    assert gw.list_runs()[0]["id"] == run["id"]
+    assert gw.list_runs(status="planning")[0]["id"] == run["id"]
+    assert gw.list_runs(status="completed") == []
+    assert gw.run_audit(run["id"])[0]["event_type"] == "run_started"
 
 
 def test_start_gated_email_requires_fields():

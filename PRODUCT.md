@@ -32,8 +32,8 @@ The operator keeps a live board up while agents run, and also comes in from an a
 
 ## Capabilities and Constraints
 
-- v1.0 surfaces: live run list; DAG with a router node; approval levers; occurrence book; analog instrument gauges including cost / run; Keycloak sign-in; Go model-router; LangChain and CrewAI examples via `GroundwireClient`. Set a route is always on the plate.
-- Approval pings: optional `APPROVAL_WEBHOOK_URL` on the worker when a run hits danger. Email/Slack not yet. Visual workflow builder is out.
+- v1.0 surfaces: live run list; DAG with a router node; approval levers; occurrence book; analog instrument gauges including cost / run; Keycloak sign-in; Go model-router; LangChain and CrewAI examples via `GroundwireClient`; public page on compose `:4300` (CTA opens the live box). Set a route is always on the plate.
+- Approval pings: optional `APPROVAL_WEBHOOK_URL` on the worker when a run hits danger. Optional `TOOL_EXECUTOR_URL` is the real send, called only after approve. Held runs auto-reject after `APPROVAL_TIMEOUT_HOURS` (default 72). Visual workflow builder is out.
 - Status vocabulary is fixed: `planning`, `awaiting_approval`, `executing`, `completed`, `failed`, `rejected`.
 - License Apache 2.0; no Highcharts.
 
@@ -44,8 +44,8 @@ Name: Groundwire. Voice is operator-direct, not marketing. No invented customers
 ## Evidence on Hand
 
 - `Groundwire_PRD.md` — product spec
-- Working v0.1 API + Temporal worker + compose demo (`README.md`)
-- No existing visual UI, DESIGN.md, or brand assets
+- Working compose demo (`README.md`): API, Temporal worker, Keycloak, Go router, signal box, public page
+- `DESIGN.md` — night control-plane world shared by `site/index.html` and the dashboard
 
 ## Product Principles
 

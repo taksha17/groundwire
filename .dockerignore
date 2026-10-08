@@ -1,5 +1,7 @@
 .venv
 .git
+.cache
+test_venv
 .pytest_cache
 .mypy_cache
 .angular

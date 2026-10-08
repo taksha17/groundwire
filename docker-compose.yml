@@ -52,7 +52,7 @@ services:
     volumes:
       - ./deploy/keycloak:/opt/keycloak/data/import:ro
     ports:
-      - "8081:8080"
+      - "127.0.0.1:8081:8080"
     restart: on-failure
 
   temporal:
@@ -67,7 +67,7 @@ services:
       - POSTGRES_PWD=groundwire
       - POSTGRES_SEEDS=postgres
     ports:
-      - "7233:7233"
+      - "127.0.0.1:7233:7233"
 
   temporal-ui:
     image: temporalio/ui:2.31.2
@@ -77,7 +77,7 @@ services:
       - TEMPORAL_ADDRESS=temporal:7233
       - TEMPORAL_CORS_ORIGINS=http://localhost:8000
     ports:
-      - "8088:8080"
+      - "127.0.0.1:8088:8080"
 
   api:
     image: groundwire-api:local
@@ -90,8 +90,9 @@ services:
       OIDC_ISSUER: http://localhost:8081/realms/groundwire
       OIDC_JWKS_URL: http://keycloak:8080/realms/groundwire/protocol/openid-connect/certs
       OIDC_AUDIENCE: groundwire-api
+      APPROVAL_TIMEOUT_HOURS: ${APPROVAL_TIMEOUT_HOURS:-72}
     ports:
-      - "${GROUNDWIRE_API_PORT:-8000}:8000"
+      - "127.0.0.1:${GROUNDWIRE_API_PORT:-8000}:8000"
     depends_on:
       postgres:
         condition: service_healthy
@@ -107,7 +108,7 @@ services:
     environment:
       ROUTER_ADDR: ":8090"
     ports:
-      - "8090:8090"
+      - "127.0.0.1:8090:8090"
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8090/healthz >/dev/null"]
       interval: 5s
@@ -125,6 +126,8 @@ services:
       ROUTER_URL: http://router:8090
       APPROVAL_WEBHOOK_URL: ${APPROVAL_WEBHOOK_URL:-}
       APPROVAL_WEBHOOK_SECRET: ${APPROVAL_WEBHOOK_SECRET:-}
+      TOOL_EXECUTOR_URL: ${TOOL_EXECUTOR_URL:-}
+      TOOL_EXECUTOR_SECRET: ${TOOL_EXECUTOR_SECRET:-}
       DASHBOARD_PUBLIC_URL: ${DASHBOARD_PUBLIC_URL:-http://localhost:4200}
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -143,7 +146,16 @@ services:
       context: ./dashboard
       dockerfile: Dockerfile.runtime
     ports:
-      - "${GROUNDWIRE_DASHBOARD_PORT:-4200}:80"
+      - "127.0.0.1:${GROUNDWIRE_DASHBOARD_PORT:-4200}:80"
     depends_on:
       - api
+    restart: on-failure
+
+  site:
+    image: nginx:1.27-alpine
+    ports:
+      - "127.0.0.1:${GROUNDWIRE_SITE_PORT:-4300}:80"
+    volumes:
+      - ./site:/usr/share/nginx/html:ro
+      - ./deploy/site/nginx.conf:/etc/nginx/conf.d/default.conf:ro
     restart: on-failure

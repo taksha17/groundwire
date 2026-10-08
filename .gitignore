@@ -26,6 +26,10 @@ dashboard/.angular/
 # Host-built Go router binary (copied into the alpine image)
 router/groundwire-router
 
+# Repo-local tool caches (sourced via scripts/env.sh)
+.cache/
+test_venv/
+
 # Tooling / agent state (not shipped)
 .superpowers/
 .impeccable/

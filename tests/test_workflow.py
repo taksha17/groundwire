@@ -12,6 +12,7 @@ from groundwire.temporal.workflows import AgentRunWorkflow
 TASK_QUEUE = "test-agent-runs"
 executed: list[dict] = []
 notified: list[dict] = []
+audited: list[tuple] = []
 
 
 def _input() -> RunWorkflowInput:
@@ -35,7 +36,7 @@ async def persist_stub(run_id: str, status: str, current_step: str | None, pendi
 
 @activity.defn(name="write_audit")
 async def audit_stub(run_id: str, tenant_id: str, event_type: str, actor: str, payload: dict) -> None:
-    return None
+    audited.append((event_type, actor, payload))
 
 
 @activity.defn(name="plan_run")
@@ -183,3 +184,32 @@ async def test_workflow_edit_and_approve_uses_edited_params():
             result = await handle.result()
             assert result["status"] == "completed"
             assert executed == [{"tool": "send_email", "params": edited}]
+
+
+async def test_workflow_approval_timeout_rejects_without_sending():
+    executed.clear()
+    audited.clear()
+    run_input = _input()
+    run_input.approval_policy = {
+        "require_approval_for": ["send_email"],
+        "timeout_seconds": 60,
+    }
+    async with await WorkflowEnvironment.start_time_skipping() as env:
+        async with Worker(
+            env.client,
+            task_queue=TASK_QUEUE,
+            workflows=[AgentRunWorkflow],
+            activities=[persist_stub, audit_stub, plan_stub, route_stub, notify_stub, execute_stub],
+        ):
+            handle = await env.client.start_workflow(
+                AgentRunWorkflow.run,
+                run_input,
+                id=f"run-{run_input.run_id}",
+                task_queue=TASK_QUEUE,
+                execution_timeout=timedelta(hours=2),
+            )
+            result = await handle.result()
+            assert result["status"] == "rejected"
+            assert result["reason"] == "approval_timeout"
+            assert executed == []
+            assert ("approval_expired", "system", {"tool": "send_email", "timeout_seconds": 60}) in audited

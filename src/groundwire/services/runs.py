@@ -7,13 +7,22 @@ from sqlalchemy.orm import selectinload
 from groundwire.enums import RunStatus
 from groundwire.models import AuditRecord, Run
 from groundwire.services.agents import get_agent
-from groundwire.settings import DEFAULT_TENANT_ID
+from groundwire.settings import DEFAULT_TENANT_ID, get_settings
 from groundwire.temporal.payloads import RunWorkflowInput
 from groundwire.temporal.port import TemporalPort
 
 
 class AgentNotFoundError(Exception):
     pass
+
+
+def with_approval_timeout(policy: dict, timeout_hours: float) -> dict:
+    merged = dict(policy)
+    if merged.get("timeout_seconds"):
+        return merged
+    if timeout_hours > 0:
+        merged["timeout_seconds"] = int(timeout_hours * 3600)
+    return merged
 
 
 async def start_run(
@@ -52,7 +61,10 @@ async def start_run(
             agent_name=agent.name,
             agent_version=agent.version,
             allowed_tools=list(agent.allowed_tools),
-            approval_policy=dict(agent.approval_policy),
+            approval_policy=with_approval_timeout(
+                dict(agent.approval_policy),
+                get_settings().approval_timeout_hours,
+            ),
             payload=payload,
         )
     )
